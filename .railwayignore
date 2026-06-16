@@ -1,0 +1,19 @@
+# Raw game assets (not needed - already packed into antigravity.data)
+wipeout/
+
+# Build intermediates
+build-wasm/CMakeFiles/
+build-wasm/CMakeCache.txt
+build-wasm/cmake_install.cmake
+build-wasm/Makefile
+build-native/
+
+# Source and build config (not needed for Docker deploy)
+src/
+cmake/
+CMakeLists.txt
+CMakeSettings.json
+vcpkg.json
+packaging/
+README.md
+Makefile
