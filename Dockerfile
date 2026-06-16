@@ -27,6 +27,14 @@ COPY build-wasm/index.html /usr/share/nginx/html/
 COPY build-wasm/game.html /usr/share/nginx/html/
 COPY build-wasm/antigravity.js /usr/share/nginx/html/
 COPY build-wasm/antigravity.wasm /usr/share/nginx/html/
-COPY build-wasm/antigravity.data /usr/share/nginx/html/
+
+RUN apk add --no-cache curl && \
+    for chunk in aa ab ac ad ae af ag ah ai aj ak al am an ao; do \
+      curl -fL "https://github.com/white-roz3/anti-gravity/releases/download/v1.0/chunk_${chunk}" \
+           -o "/tmp/chunk_${chunk}" || exit 1; \
+    done && \
+    cat /tmp/chunk_a{a,b,c,d,e,f,g,h,i,j,k,l,m,n,o} > /usr/share/nginx/html/antigravity.data && \
+    rm /tmp/chunk_a* && \
+    apk del curl
 
 EXPOSE 8080
