@@ -43,7 +43,7 @@ void net_test_update(void) {
 		case NET_CONNECTING:  status = "CONNECTING"; break;
 		case NET_OPEN:        status = "OPEN"; break;
 		case NET_CLOSED:      status = "CLOSED"; break;
-		case NET_UNSUPPORTED: status = "UNSUPPORTED (native)"; break;
+		case NET_UNSUPPORTED: status = "UNSUPPORTED"; break;
 	}
 
 	ui_draw_text_centered("NETWORK TEST", ui_scaled_pos(UI_POS_TOP | UI_POS_CENTER, vec2i(0, 40)), UI_SIZE_16, UI_COLOR_ACCENT);

@@ -61,10 +61,12 @@ void online_update(void) {
 	render_set_view_2d();
 	render_push_2d(vec2i(0, 0), render_size(), rgba(4, 8, 16, 255), RENDER_NO_TEXTURE);
 
+	// NOTE: the bitmap font only has A-Z, 0-9 and space — no punctuation/lowercase
+	// (ui_draw_text would read an out-of-bounds glyph), so keep these uppercase.
 	const char *status =
-		net_is_open()                    ? "WAITING FOR PLAYER..." :
-		net_state() == NET_CONNECTING    ? "CONNECTING..." :
-		net_state() == NET_UNSUPPORTED   ? "UNSUPPORTED (native)" :
+		net_is_open()                    ? "WAITING FOR PLAYER" :
+		net_state() == NET_CONNECTING    ? "CONNECTING" :
+		net_state() == NET_UNSUPPORTED   ? "WEBSOCKET UNSUPPORTED" :
 		                                   "DISCONNECTED";
 
 	ui_draw_text_centered("ONLINE RACE", ui_scaled_pos(UI_POS_TOP | UI_POS_CENTER, vec2i(0, 40)), UI_SIZE_16, UI_COLOR_ACCENT);
