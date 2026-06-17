@@ -2,13 +2,23 @@ FROM nginx:alpine
 
 # nginx config with correct MIME types and COOP/COEP headers for SharedArrayBuffer
 RUN cat > /etc/nginx/conf.d/default.conf <<'EOF'
+# Pick a Cache-Control value from the request path (query string is not part of $uri).
+# Versioned assets (?v=agN) are safe to cache forever; HTML must revalidate.
+map $uri $cache_control {
+    default                   "no-cache, must-revalidate";
+    "~*\.(?:js|wasm|data)$"   "public, max-age=31536000, immutable";
+}
+
 server {
     listen 8080;
     root /usr/share/nginx/html;
     index index.html;
 
-    add_header Cross-Origin-Opener-Policy "same-origin";
-    add_header Cross-Origin-Embedder-Policy "require-corp";
+    # All headers live at the server level: an add_header inside a location block
+    # would drop these inherited COOP/COEP headers and break SharedArrayBuffer.
+    add_header Cross-Origin-Opener-Policy "same-origin" always;
+    add_header Cross-Origin-Embedder-Policy "require-corp" always;
+    add_header Cache-Control $cache_control always;
 
     types {
         text/html                             html htm;
