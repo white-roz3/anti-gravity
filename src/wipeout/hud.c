@@ -157,12 +157,22 @@ static void hud_draw_speedo_bars(vec2i_t *pos, float f, rgba_t color_override) {
 	hud_draw_speedo_bar(pos, &speedo.bars[last_bar - 1], &speedo.bars[last_bar], last_bar_fraction, color_override);
 }
 
+// Clean hi-tech speed readout: a horizontal bar + numeric value in a glass panel,
+// replacing the old PSX speedo facia + angled bar stack.
 static void hud_draw_speedo(int speed, int thrust) {
-	vec2i_t facia_pos = ui_scaled_pos(UI_POS_BOTTOM | UI_POS_RIGHT, vec2i(-141, -45));
-	vec2i_t bar_pos = ui_scaled_pos(UI_POS_BOTTOM | UI_POS_RIGHT, vec2i(-141, -40));
-	hud_draw_speedo_bars(&bar_pos, thrust / 65.0, rgba(255, 0, 0, 128));
-	hud_draw_speedo_bars(&bar_pos, speed / 2166.0, rgba(0, 0, 0, 0));
-	render_push_2d(facia_pos, ui_scaled(render_texture_size(speedo_facia_texture)), rgba(128, 128, 128, 255), speedo_facia_texture);
+	int s = ui_get_scale();
+	int bw = 140, bh = 5;                                   // bar size (unscaled)
+	vec2i_t p = ui_scaled_pos(UI_POS_BOTTOM | UI_POS_RIGHT, vec2i(-bw - 16, -24));
+	ui_draw_rect(vec2i(p.x - 8*s, p.y - 26*s), vec2i((bw + 16)*s, 42*s), UI_COLOR_PANEL); // glass panel
+	ui_draw_text("SPEED", vec2i(p.x, p.y - 22*s), UI_SIZE_8, UI_COLOR_ACCENT);            // label
+	int kph = speed / 9;                                                                 // readout value
+	int nw = ui_number_width(kph, UI_SIZE_16) * s;
+	ui_draw_number(kph, vec2i(p.x + bw*s - nw, p.y - 22*s), UI_SIZE_16, UI_COLOR_DEFAULT);
+	ui_draw_rect(p, vec2i(bw*s, bh*s), rgba(18, 24, 32, 200));                            // bar track
+	float f = speed / 2166.0; if (f < 0) f = 0; if (f > 1) f = 1;
+	ui_draw_rect(p, vec2i((int)(bw * f) * s, bh*s), UI_COLOR_LINE);                       // speed fill
+	float tf = thrust / 65.0; if (tf < 0) tf = 0; if (tf > 1) tf = 1;
+	ui_draw_rect(vec2i(p.x, p.y - 3*s), vec2i((int)(bw * tf) * s, 2*s), rgba(120, 40, 40, 220)); // thrust pip
 }
 
 static void hud_draw_target_icon(vec3_t position) {
@@ -187,6 +197,12 @@ static void hud_draw_target_icon(vec3_t position) {
 }
 
 void hud_draw(ship_t *ship) {
+	// Hi-tech glass panels behind the HUD clusters (drawn first, under the text)
+	ui_draw_rect(ui_scaled(vec2i(8, 4)), ui_scaled(vec2i(72, 62)), UI_COLOR_PANEL);
+	if (g.race_type != RACE_TYPE_TIME_TRIAL) {
+		ui_draw_rect(ui_scaled_pos(UI_POS_TOP | UI_POS_RIGHT, vec2i(-98, 4)), ui_scaled(vec2i(94, 34)), UI_COLOR_PANEL);
+	}
+
 	// Current lap time
 	if (ship->lap >= 0) {
 		ui_draw_time(ship->lap_time, ui_scaled_pos(UI_POS_BOTTOM | UI_POS_LEFT, vec2i(16, -30)), UI_SIZE_16, UI_COLOR_DEFAULT);
@@ -236,7 +252,7 @@ void hud_draw(ship_t *ship) {
 
 	// Wrong way
 	if (flags_not(ship->flags, SHIP_DIRECTION_FORWARD)) {
-		ui_draw_text_centered("WRONG WAY", ui_scaled_pos(UI_POS_MIDDLE | UI_POS_CENTER, vec2i(-20, 0)), UI_SIZE_16, UI_COLOR_ACCENT);
+		ui_draw_text_centered("WRONG WAY", ui_scaled_pos(UI_POS_MIDDLE | UI_POS_CENTER, vec2i(-20, 0)), UI_SIZE_16, rgba(132, 36, 28, 255));
 	}
 
 	// Speedo

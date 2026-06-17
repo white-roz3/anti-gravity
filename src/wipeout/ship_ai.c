@@ -184,7 +184,7 @@ void ship_ai_update_race(ship_t *self) {
 				flags_add(self->flags, SHIP_JUST_IN_FRONT);
 
 				if (self->update_timer <= 0) { // Make New Decision
-					int chance = rand_int(0, 64); // 12
+					int chance = sim_rand_int(0, 64); // 12
 
 					self->update_timer = UPDATE_TIME_JUST_FRONT;
 					if (self->fight_back) { // Ship wants to make life difficult
@@ -242,7 +242,7 @@ void ship_ai_update_race(ship_t *self) {
 							flags_add(self->flags, SHIP_OVERTAKEN);
 						}
 						else {
-							int chance = rand_int(0, 64);
+							int chance = sim_rand_int(0, 64);
 
 							if (chance < 48) {
 								self->update_strat_func = ship_ai_strat_block;
@@ -333,7 +333,7 @@ void ship_ai_update_race(ship_t *self) {
 
 			else if ((section_diff <= 10) && (section_diff > 4)) { // Ship close by, beware does not account for lapped opponents yet
 				if (self->update_timer <= 0) { // Make New Decision
-					int chance = rand_int(0, 5);
+					int chance = sim_rand_int(0, 5);
 
 					self->update_timer = UPDATE_TIME_IN_SIGHT;
 					switch (chance) {
@@ -380,7 +380,7 @@ void ship_ai_update_race(ship_t *self) {
 
 		if (section->junction) {
 			if (flags_is(section->junction->flags, SECTION_JUNCTION_START)) {
-				int chance = rand_int(0, 2);
+				int chance = sim_rand_int(0, 2);
 				if (chance == 0) {
 					flags_add(self->flags, SHIP_JUNCTION_LEFT);
 				}
@@ -516,9 +516,9 @@ void ship_ai_update_race(ship_t *self) {
 		if (self->ebolt_effect_timer > 0.1) {
 			self->ebolt_effect_timer -= 0.1;
 
-			self->position = vec3_add(self->position, vec3_rand(20));
+			self->position = vec3_add(self->position, vec3_sim_rand(20));
 
-			if (rand_int(0, 10) == 0) {
+			if (sim_rand_int(0, 10) == 0) {
 				self->speed -= self->speed * 0.5;
 			}
 		}

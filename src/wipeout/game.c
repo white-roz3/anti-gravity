@@ -20,6 +20,7 @@
 #include "main_menu.h"
 #include "title.h"
 #include "intro.h"
+#include "net_test.h"
 
 #define TURN_ACCEL(V) NTSC_ACCELERATION(ANGLE_NORM_TO_RADIAN(FIXED_TO_FLOAT(YAW_VELOCITY(V))))
 #define TURN_VEL(V)   NTSC_VELOCITY(ANGLE_NORM_TO_RADIAN(FIXED_TO_FLOAT(YAW_VELOCITY(V))))
@@ -377,7 +378,7 @@ const game_def_t def = {
 		{.path = "wipeout/music/track08.qoa", .name = "TRANCEVAAL"},
 		{.path = "wipeout/music/track09.qoa", .name = "AFRO RIDE"},
 		{.path = "wipeout/music/track10.qoa", .name = "CHEMICAL BEATS"},
-		{.path = "wipeout/music/track11.qoa", .name = "WIPEOUT"},
+		{.path = "wipeout/music/track11.qoa", .name = "ANTI-GRAVITY"},
 	},
 	.credits = {
 		"#MANAGING DIRECTORS",
@@ -556,7 +557,7 @@ const game_def_t def = {
 			"#AWESOME",
 			"",
 			"YOU HAVE BEATEN",
-			"#WIPEOUT",
+			"#ANTI-GRAVITY",
 			"",
 			"YOU ARE A TRULY",
 			"",
@@ -574,7 +575,7 @@ const game_def_t def = {
 			"FROM ALL OF US ON THE TEAM",
 			"",
 			"LOOK OUT FOR",
-			"#WIPEOUT II",
+			"#ANTI-GRAVITY II",
 			"",
 			"COMING SOON",
 		},
@@ -820,6 +821,7 @@ struct {
 	[GAME_SCENE_TITLE] = {title_init, title_update},
 	[GAME_SCENE_MAIN_MENU] = {main_menu_init, main_menu_update},
 	[GAME_SCENE_RACE] = {race_init, race_update},
+	[GAME_SCENE_NET_TEST] = {net_test_init, net_test_update},
 };
 
 static game_scene_t scene_current = GAME_SCENE_NONE;
@@ -930,7 +932,7 @@ void game_init(void) {
 	}
 
 
-	game_set_scene(GAME_SCENE_INTRO);
+	game_set_scene(GAME_SCENE_MAIN_MENU);
 }
 
 void game_set_scene(game_scene_t scene) {

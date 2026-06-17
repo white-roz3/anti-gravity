@@ -308,6 +308,11 @@ sapp_desc sokol_main(int argc, char* argv[]) {
 	return (sapp_desc) {
 		.width = SYSTEM_WINDOW_WIDTH,
 		.height = SYSTEM_WINDOW_HEIGHT,
+		// Build-compat fix (not a rebrand change): force sokol to size the WASM canvas to
+		// width/height. The default (track CSS size) relies on emscripten_get_element_css_size,
+		// which under emscripten 5.x leaves the canvas at its 300x150 default -> renders
+		// offscreen -> black screen. Setting this makes sokol use the fixed 1280x720.
+		.html5_canvas_resize = true,
 		.init_cb = system_init,
 		.frame_cb = system_update,
 		.window_title = SYSTEM_WINDOW_NAME,

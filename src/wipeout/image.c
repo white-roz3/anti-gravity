@@ -286,6 +286,20 @@ uint16_t image_get_texture_semi_trans(char *name) {
 	return texture_index;
 }
 
+// Load a raw RGBA blob (header: u32 width, u32 height, then width*height*4 RGBA bytes)
+// as a texture. Used for the custom anti-aliased UI font atlases (full 8-bit alpha).
+uint16_t image_get_texture_raw(char *name) {
+	printf("load raw: %s\n", name);
+	uint32_t size;
+	uint8_t *bytes = platform_load_asset(name, &size);
+	uint32_t p = 0;
+	int32_t width = get_i32_le(bytes, &p);
+	int32_t height = get_i32_le(bytes, &p);
+	uint16_t texture_index = render_texture_create(width, height, (rgba_t *)(bytes + 8));
+	mem_temp_free(bytes);
+	return texture_index;
+}
+
 texture_list_t image_get_compressed_textures(char *name) {
 	cmp_t *cmp = image_load_compressed(name);
 	texture_list_t list = {.start = render_textures_len(), .len = cmp->len};

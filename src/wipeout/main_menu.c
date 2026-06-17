@@ -57,6 +57,10 @@ static void button_options(menu_t *menu, int data) {
 	page_options_init(menu);
 }
 
+static void button_net_test(menu_t *menu, int data) {
+	game_set_scene(GAME_SCENE_NET_TEST);
+}
+
 static void button_quit_confirm(menu_t *menu, int data) {
 	if (data) {
 		system_exit();
@@ -88,6 +92,7 @@ static void page_main_init(menu_t *menu) {
 
 	menu_page_add_button(page, 0, "START GAME", button_start_game);
 	menu_page_add_button(page, 1, "OPTIONS", button_options);
+	menu_page_add_button(page, 0, "NETWORK TEST", button_net_test);
 
 	#ifndef __EMSCRIPTEN__
 		menu_page_add_button(page, 2, "QUIT", button_quit);

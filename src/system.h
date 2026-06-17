@@ -3,7 +3,7 @@
 
 #include "types.h"
 
-#define SYSTEM_WINDOW_NAME "wipEout"
+#define SYSTEM_WINDOW_NAME "Anti-Gravity"
 #define SYSTEM_WINDOW_WIDTH 1280
 #define SYSTEM_WINDOW_HEIGHT 720
 
@@ -15,6 +15,7 @@ void system_resize(vec2i_t size);
 
 double system_time(void);
 double system_tick(void);
+void system_set_tick(double t);
 double system_cycle_time(void);
 void system_reset_cycle_time(void);
 double system_time_scale_get(void);

@@ -167,14 +167,30 @@ void menu_update(menu_t *menu) {
 		}
 
 		page = &menu->pages[menu->index];
+
+		// Thin accent underline beneath the title + dark glass panel behind the item list
+		if (flags_is(page->layout_flags, MENU_ALIGN_CENTER)) {
+			int s = ui_get_scale();
+			vec2i_t tu = ui_scaled_pos(page->title_anchor, vec2i(title_pos.x, title_pos.y + 14));
+			ui_draw_rect(vec2i(tu.x - 70*s, tu.y), vec2i(140*s, s), UI_COLOR_LINE);
+			if (page->entries_len > 0) {
+				vec2i_t pc = ui_scaled_pos(page->items_anchor, items_pos);
+				int pw = 230 * s, ph = (page->entries_len * 12 + 10) * s;
+				ui_draw_rect(vec2i(pc.x - pw/2, pc.y - 7*s), vec2i(pw, ph), UI_COLOR_PANEL);
+			}
+		}
+
 		for (int i = 0; i < page->entries_len; i++) {
 			menu_entry_t *entry = &page->entries[i];
-			rgba_t text_color;
-			if (i == page->index && blink()) {
-				text_color = UI_COLOR_ACCENT;
-			}
-			else {
-				text_color = UI_COLOR_DEFAULT;
+			bool selected = (i == page->index);
+			rgba_t text_color = selected ? UI_COLOR_ACCENT : UI_COLOR_DEFAULT;
+
+			// translucent selection highlight bar behind the selected entry
+			if (selected && flags_is(page->layout_flags, MENU_ALIGN_CENTER)) {
+				int s = ui_get_scale();
+				vec2i_t ic = ui_scaled_pos(page->items_anchor, items_pos);
+				int bw = 220 * s;
+				ui_draw_rect(vec2i(ic.x - bw/2, ic.y - 2*s), vec2i(bw, 11*s), UI_COLOR_HILIGHT);
 			}
 
 			if (flags_is(page->layout_flags, MENU_ALIGN_CENTER)) {

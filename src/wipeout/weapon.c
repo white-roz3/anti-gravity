@@ -428,14 +428,14 @@ void weapon_update_missile(weapon_t *self) {
 		if (flags_not(ship->flags, SHIP_SHIELDED)) {
 			if (ship->pilot == g.pilot) {
 				ship->velocity = vec3_sub(ship->velocity, vec3_mulf(ship->velocity, 0.75));
-				ship->angular_velocity.z += rand_float(-0.1, 0.1);
-				ship->turn_rate_from_hit = rand_float(-0.1, 0.1);
+				ship->angular_velocity.z += sim_rand_float(-0.1, 0.1);
+				ship->turn_rate_from_hit = sim_rand_float(-0.1, 0.1);
 				camera_set_shake(&g.camera, CAMERA_SHAKE_LONG);
 			}
 			else {
 				ship->speed = ship->speed * 0.03125;
 				ship->angular_velocity.z += 10 * M_PI;
-				ship->turn_rate_from_hit = rand_float(-M_PI, M_PI);
+				ship->turn_rate_from_hit = sim_rand_float(-M_PI, M_PI);
 			}
 		}
 	}
@@ -476,14 +476,14 @@ void weapon_update_rocket(weapon_t *self) {
 		if (flags_not(ship->flags, SHIP_SHIELDED)) {
 			if (ship->pilot == g.pilot) {
 				ship->velocity = vec3_sub(ship->velocity, vec3_mulf(ship->velocity, 0.75));
-				ship->angular_velocity.z += rand_float(-0.1, 0.1);;
-				ship->turn_rate_from_hit = rand_float(-0.1, 0.1);;
+				ship->angular_velocity.z += sim_rand_float(-0.1, 0.1);;
+				ship->turn_rate_from_hit = sim_rand_float(-0.1, 0.1);;
 				camera_set_shake(&g.camera, CAMERA_SHAKE_LONG);
 			}
 			else {
 				ship->speed = ship->speed * 0.03125;
 				ship->angular_velocity.z += 10 * M_PI;
-				ship->turn_rate_from_hit = rand_float(-M_PI, M_PI);
+				ship->turn_rate_from_hit = sim_rand_float(-M_PI, M_PI);
 			}
 		}
 	}
@@ -617,7 +617,7 @@ void weapon_fire_turbo(ship_t *ship) {
 
 int weapon_get_random_type(int type_class) {
 	if (type_class == WEAPON_CLASS_ANY) {
-		int index = rand_int(0, 65);
+		int index = sim_rand_int(0, 65);
 		if (index < 17) {
 			return WEAPON_TYPE_ROCKET;
 		}
@@ -638,7 +638,7 @@ int weapon_get_random_type(int type_class) {
 		}
 	}
 	else if (type_class == WEAPON_CLASS_PROJECTILE) { 
-		int index = rand_int(0, 60);
+		int index = sim_rand_int(0, 60);
 		if (index < 27) {
 			return WEAPON_TYPE_ROCKET;
 		}

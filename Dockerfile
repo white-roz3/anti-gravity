@@ -33,7 +33,10 @@ RUN apk add --no-cache curl && \
       curl -fL "https://github.com/white-roz3/anti-gravity/releases/download/v1.0/chunk_${chunk}" \
            -o "/tmp/chunk_${chunk}" || exit 1; \
     done && \
-    cat /tmp/chunk_a{a,b,c,d,e,f,g,h,i,j,k,l,m,n,o} > /usr/share/nginx/html/antigravity.data && \
+    cat /tmp/chunk_aa /tmp/chunk_ab /tmp/chunk_ac /tmp/chunk_ad /tmp/chunk_ae \
+        /tmp/chunk_af /tmp/chunk_ag /tmp/chunk_ah /tmp/chunk_ai /tmp/chunk_aj \
+        /tmp/chunk_ak /tmp/chunk_al /tmp/chunk_am /tmp/chunk_an /tmp/chunk_ao \
+        > /usr/share/nginx/html/antigravity.data && \
     rm /tmp/chunk_a* && \
     apk del curl
 

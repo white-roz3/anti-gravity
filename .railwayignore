@@ -2,6 +2,7 @@
 wipeout/
 
 # Build intermediates
+build-wasm/antigravity.data
 build-wasm/CMakeFiles/
 build-wasm/CMakeCache.txt
 build-wasm/cmake_install.cmake

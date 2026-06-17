@@ -10,8 +10,13 @@ typedef enum {
 	UI_SIZE_MAX
 } ui_text_size_t;
 
-#define UI_COLOR_ACCENT rgba(123, 98, 12, 255)
-#define UI_COLOR_DEFAULT rgba(128, 128, 128, 255)
+// Clean hi-tech palette. NOTE: the GL shader multiplies rgb x2 (render_gl.c), so
+// these are pre-halved — the on-screen color is ~2x the rgb below. Alpha is NOT doubled.
+#define UI_COLOR_ACCENT  rgba( 46, 116, 134, 255)  // cool azure/cyan  -> ~(92,232,255)
+#define UI_COLOR_DEFAULT rgba(128, 128, 128, 255)  // clean white      -> (255,255,255)
+#define UI_COLOR_PANEL   rgba(  7,  11,  19, 150)  // dark translucent "glass" panel
+#define UI_COLOR_LINE    rgba( 60, 124, 140, 255)  // bright accent divider line
+#define UI_COLOR_HILIGHT rgba( 28,  78, 104,  98)  // translucent selection bar
 
 typedef enum {
 	UI_ICON_HAND,
@@ -52,5 +57,6 @@ void ui_draw_number(int num, vec2i_t pos, ui_text_size_t size, rgba_t color);
 void ui_draw_image(vec2i_t pos, uint16_t texture);
 void ui_draw_icon(ui_icon_type_t icon, vec2i_t pos, rgba_t color);
 void ui_draw_text_centered(const char *text, vec2i_t pos, ui_text_size_t size, rgba_t color);
+void ui_draw_rect(vec2i_t pos, vec2i_t size, rgba_t color);
 
 #endif

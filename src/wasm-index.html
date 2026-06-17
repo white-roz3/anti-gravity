@@ -6,11 +6,11 @@
 		<meta name="apple-mobile-web-app-capable" content="yes">
 		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 		<meta name="viewport" content="viewport-fit=cover, user-scalable=no, width=device-width, initial-scale=1, maximum-scale=1">
-		<title>wipEout</title>
+		<title>Anti-Gravity</title>
 		<style>
 			html, body {
 				color: #ccc;
-				font-family: Monospace;
+				font-family: 'Arial Narrow', 'Avenir Next', 'Helvetica Neue', Helvetica, Arial, sans-serif;
 				font-size: 13px;
 				background-color: #111;
 				margin: 0px;
@@ -237,7 +237,7 @@
 	<body>
 		<div id="head">
 			<div>
-				<h1>wipEout</h1>
+				<h1>Anti-Gravity</h1>
 				<a href="#" id="fullscreen">fullscreen</a>
 				<span class="key"><kbd>◀</kbd><kbd>▲</kbd><kbd>▼</kbd><kbd>▶</kbd> steering</span>
 				<span class="key"><kbd>X</kbd> thrust</span>
@@ -312,10 +312,10 @@
 				document.getElementById('game').requestFullscreen();
 			};
 
-			document.getElementById('select-version').style.display = 'block';
-			document.getElementById('fullscreen').addEventListener('click', (ev) => requestFullscreen(ev, 'wipeout.js'))
-			document.getElementById('load-full-version').addEventListener('click', (ev) => loadScript(ev, 'wipeout.js'));
-			document.getElementById('load-minimal-version').addEventListener('click', (ev) => loadScript(ev, 'wipeout-minimal.js'));
+			document.getElementById('select-version').style.display = 'none'; loadScript({preventDefault(){}}, 'antigravity.js'); /* auto-boot full version, no select screen */
+			document.getElementById('fullscreen').addEventListener('click', (ev) => requestFullscreen(ev, 'antigravity.js'))
+			document.getElementById('load-full-version').addEventListener('click', (ev) => loadScript(ev, 'antigravity.js'));
+			document.getElementById('load-minimal-version').addEventListener('click', (ev) => loadScript(ev, 'antigravity.js'));
 
 			var statusElement = document.getElementById('status');
 			var progressElement = document.getElementById('progress');
@@ -326,17 +326,17 @@
 				window.scrollTo(0, 0);
 
 				// Setup touch buttons if this is a touch device
-				if ('ontouchstart' in window) {
+				if (true) { /* forced: always show the mobile touch layout, even on desktop */
 					document.getElementById('head').style.display = 'none';
 					document.body.classList.add('touch');
 					let touchButtons = document.getElementsByClassName('button');
 					for (let i = 0; i < touchButtons.length; i++) {
 						let button = touchButtons[i];
-						button.addEventListener('touchstart', (ev) => {
+						button.addEventListener('pointerdown', (ev) => { ev.preventDefault(); ev.currentTarget.setPointerCapture(ev.pointerId);
 							Module._set_button(parseInt(ev.currentTarget.dataset.button), 1);
 							ev.currentTarget.classList.add('active');
 						});
-						button.addEventListener('touchend', (ev) => {
+						button.addEventListener('pointerup', (ev) => { ev.preventDefault();
 							Module._set_button(parseInt(ev.currentTarget.dataset.button), 0);
 							ev.currentTarget.classList.remove('active');
 						});

@@ -72,6 +72,13 @@ double system_tick(void) {
 	return tick_last;
 }
 
+// Override the current tick delta. Used by the fixed-timestep race simulation
+// loop so physics integrate against a uniform 1/60s step instead of the
+// variable display-frame delta.
+void system_set_tick(double t) {
+	tick_last = t;
+}
+
 double system_time(void) {
 	return time_scaled;
 }

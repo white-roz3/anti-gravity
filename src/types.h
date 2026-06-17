@@ -250,6 +250,7 @@ vec3_t vec3_project_to_ray(vec3_t p, vec3_t r0, vec3_t r1);
 float vec3_distance_to_plane(vec3_t p, vec3_t plane_pos, vec3_t plane_normal);
 vec3_t vec3_reflect(vec3_t incidence, vec3_t normal, float f);
 vec3_t vec3_rand(float maxlen);
+vec3_t vec3_sim_rand(float maxlen);
 
 float wrap_angle(float a);
 

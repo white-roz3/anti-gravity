@@ -76,7 +76,13 @@
 char *get_path(const char *dir, const char *file);
 bool str_starts_with(const char *haystack, const char *needle);
 float rand_float(float min, float max);
-int32_t rand_int(int32_t min, int32_t max); 
+int32_t rand_int(int32_t min, int32_t max);
+
+// Seedable PRNG for simulation-affecting randomness (deterministic given a
+// seed). Keep rand_float/rand_int for visual-only randomness.
+void sim_rand_seed(uint32_t seed);
+float sim_rand_float(float min, float max);
+int32_t sim_rand_int(int32_t min, int32_t max);
 
 bool file_exists(const char *path);
 uint8_t *file_load(const char *path, uint32_t *bytes_read);
@@ -97,6 +103,14 @@ uint32_t file_store(const char *path, void *bytes, int32_t len);
 #define shuffle(LIST, LEN) \
 	for (int i = (LEN) - 1; i > 0; i--) { \
 		int j = rand_int(0, i+1); \
+		swap((LIST)[i], (LIST)[j]); \
+	}
+
+// Seeded variant: grid/start order is part of the simulation, so it must use
+// the seedable sim PRNG (reproducible per race seed).
+#define shuffle_seeded(LIST, LEN) \
+	for (int i = (LEN) - 1; i > 0; i--) { \
+		int j = sim_rand_int(0, i+1); \
 		swap((LIST)[i], (LIST)[j]); \
 	}
 

@@ -213,9 +213,9 @@ void ship_player_update_race(ship_t *self) {
 			if (flags_is(self->flags, SHIP_VIEW_INTERNAL)) {
 				camera_set_shake(&g.camera, CAMERA_SHAKE_SHORT);
 			}
-			self->angular_velocity.y += rand_float(-0.5, 0.5);
+			self->angular_velocity.y += sim_rand_float(-0.5, 0.5);
 
-			if (rand_int(0, 10) == 0) { // approx once per second
+			if (sim_rand_int(0, 10) == 0) { // approx once per second
 				self->thrust_mag *= 0.75;
 			}
 		}
@@ -227,7 +227,7 @@ void ship_player_update_race(ship_t *self) {
 	// Handle Stall
 	if (self->update_timer > 0) {
 		if (self->current_thrust_max < 500) {
-			self->current_thrust_max += rand_float(0, 165) * system_tick();
+			self->current_thrust_max += sim_rand_float(0, 165) * system_tick();
 		}
 		self->update_timer -= system_tick();
 	}

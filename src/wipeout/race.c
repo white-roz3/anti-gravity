@@ -21,6 +21,7 @@
 #include "menu.h"
 #include "ship_ai.h"
 #include "ingame_menus.h"
+#include "ghost.h"
 
 #define ATTRACT_DURATION 60.0
 
@@ -29,6 +30,14 @@ static bool menu_is_scroll_text = false;
 static bool has_show_credits = false;
 static float attract_start_time;
 static menu_t *active_menu = NULL;
+
+// Fixed-timestep simulation: the race sim advances in uniform 1/60s steps,
+// decoupled from the (variable) display frame rate. At 60Hz vsync this is
+// exactly one step per displayed frame, so the feel is unchanged.
+#define RACE_SIM_HZ 60.0
+#define RACE_SIM_DT (1.0 / RACE_SIM_HZ)
+#define RACE_MAX_STEPS 8
+static double sim_accumulator = 0;
 
 void race_init(void) {
 	ingame_menus_load();
@@ -77,15 +86,31 @@ void race_update(void) {
 		}
 	}
 	else {
-		ships_update();
-		droid_update(&g.droid, &g.ships[g.pilot]);
-		camera_update(&g.camera, &g.ships[g.pilot], &g.droid);
-		weapons_update();
-		particles_update();
-		scene_update();
-		if (g.race_type != RACE_TYPE_TIME_TRIAL) {
-			track_cycle_pickups();
+		// Fixed-timestep simulation: advance the race sim in uniform 1/60s steps
+		// so physics stay framerate-independent. system_tick() returns the fixed
+		// dt during each step. At 60Hz vsync this is one step per displayed frame.
+		double frame_dt = system_tick();
+		sim_accumulator += frame_dt;
+		int sim_steps = 0;
+		while (sim_accumulator >= RACE_SIM_DT && sim_steps < RACE_MAX_STEPS) {
+			system_set_tick(RACE_SIM_DT);
+			ships_update();
+			if (g.race_type == RACE_TYPE_TIME_TRIAL) {
+				ghost_record_tick(&g.ships[g.pilot]);
+				ghost_update();
+			}
+			droid_update(&g.droid, &g.ships[g.pilot]);
+			camera_update(&g.camera, &g.ships[g.pilot], &g.droid);
+			weapons_update();
+			particles_update();
+			scene_update();
+			if (g.race_type != RACE_TYPE_TIME_TRIAL) {
+				track_cycle_pickups();
+			}
+			sim_accumulator -= RACE_SIM_DT;
+			sim_steps++;
 		}
+		system_set_tick(frame_dt); // restore display-frame delta for render code
 
 		if (g.is_attract_mode) {
 			if (input_pressed(A_MENU_START) || input_pressed(A_MENU_SELECT)) {
@@ -112,6 +137,7 @@ void race_update(void) {
 	render_set_cull_backface(true);
 
 	ships_draw();
+	ghost_draw();
 	droid_draw(&g.droid);
 	weapons_draw();
 	particles_draw();
@@ -138,12 +164,19 @@ void race_update(void) {
 }
 
 void race_start(void) {
+	// Seed the simulation PRNG per race. Varying (wall-clock) by default so
+	// races still differ run-to-run; can be overridden with a fixed seed for
+	// reproducible runs (ghosts / future netcode).
+	sim_rand_seed((uint32_t)(platform_now() * 1000.0));
+
 	active_menu = NULL;
+	sim_accumulator = 0;
 	sfx_reset();
 	scene_init();
 	camera_init(&g.camera, g.track.sections);
 	g.camera.update_func = camera_update_race_intro;
 	ships_init(g.track.sections);
+	ghost_begin_race();
 	droid_init(&g.droid, &g.ships[g.pilot]);
 	particles_init();
 	weapons_init();

@@ -64,7 +64,7 @@ void ships_init(section_t *section) {
 
 	// Randomize order for single race or new championship
 	if (g.race_type != RACE_TYPE_CHAMPIONSHIP || g.circut == CIRCUT_ALTIMA_VII) {
-		shuffle(ranks_to_pilots, len(ranks_to_pilots));
+		shuffle_seeded(ranks_to_pilots, len(ranks_to_pilots));
 	}
 
 	// Randomize some tiers in an ongoing championship
@@ -73,8 +73,8 @@ void ships_init(section_t *section) {
 		for (int i = 0; i < len(g.ships); i++) {
 			ranks_to_pilots[i] = g.championship_ranks[i].pilot;
 		}		
-		shuffle(ranks_to_pilots, 2); // shuffle 0..1
-		shuffle(ranks_to_pilots + 4, len(ranks_to_pilots)-5); // shuffle 4..len-1
+		shuffle_seeded(ranks_to_pilots, 2); // shuffle 0..1
+		shuffle_seeded(ranks_to_pilots + 4, len(ranks_to_pilots)-5); // shuffle 4..len-1
 	}
 
 	// player is always last
@@ -130,6 +130,11 @@ void ships_update(void) {
 		}
 		for (int j = 0; j < (len(g.ships) - 1); j++) {
 			for (int i = j + 1; i < len(g.ships); i++) {
+				// Remote/puppet ships are positioned by their source, not
+				// physics — they don't participate in collision resolution.
+				if (g.ships[i].control == SHIP_CONTROL_REMOTE || g.ships[j].control == SHIP_CONTROL_REMOTE) {
+					continue;
+				}
 				ship_collide_with_ship(&g.ships[i], &g.ships[j]);
 			}
 		}
@@ -217,6 +222,8 @@ void ship_init(ship_t *self, section_t *section, int pilot, int inv_start_rank) 
 
 	self->update_timer = 0;
 	self->last_impact_time = 0;
+	self->control = SHIP_CONTROL_AI;
+	self->remote_source.sample = NULL;
 
 	int team = def.pilots[pilot].team;
 	self->mass =          def.teams[team].attributes[g.race_class].mass;
@@ -231,6 +238,7 @@ void ship_init(ship_t *self, section_t *section, int pilot, int inv_start_rank) 
 	self->position_rank = NUM_PILOTS - inv_start_rank;
 
 	if (pilot == g.pilot) {
+		self->control = SHIP_CONTROL_PLAYER;
 		self->update_func = ship_player_update_intro;
 		self->remote_thrust_max = 2900;
 		self->remote_thrust_mag = 46;

@@ -60,6 +60,30 @@
 #define SHIP_THRUST_FALLOFF NTSC_VELOCITY(8)
 #define SHIP_BRAKE_RATE     NTSC_VELOCITY(32)
 
+// How a ship's per-tick update is driven.
+typedef enum {
+	SHIP_CONTROL_PLAYER,
+	SHIP_CONTROL_AI,
+	SHIP_CONTROL_REMOTE,
+} ship_control_t;
+
+// One sampled frame of an externally-driven (remote / ghost) ship.
+typedef struct {
+	vec3_t position;
+	vec3_t angle;
+	int16_t section_num;
+	int16_t lap;
+} ship_frame_t;
+
+// Pluggable source of frames for a remote/puppet ship. sample() fills the two
+// frames bracketing sim_time plus the interpolation factor t in [0,1], and
+// returns false when no data is available. Reused by ghost playback and live
+// multiplayer.
+typedef struct {
+	bool (*sample)(void *ctx, double sim_time, ship_frame_t *a, ship_frame_t *b, float *t);
+	void *ctx;
+} remote_source_t;
+
 typedef struct ship_t {
 	int16_t pilot;
 	int flags;
@@ -134,6 +158,11 @@ typedef struct ship_t {
 	// Control Routines
 	vec3_t (*update_strat_func)(struct ship_t *, track_face_t *);
 	void (*update_func)(struct ship_t *);
+
+	// Control source (player / ai / remote-puppet). REMOTE ships are driven by
+	// `remote_source` (no physics) and excluded from inter-ship collision.
+	ship_control_t control;
+	remote_source_t remote_source;
 
 	// Audio
 	sfx_t *sfx_engine_thrust;

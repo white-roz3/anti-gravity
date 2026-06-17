@@ -43,9 +43,15 @@ if (DEV_BUILD)
 	set(PATH_USERDATA "${CMAKE_SOURCE_DIR}/")
 endif()
 
-find_package(OpenGL)
-find_package(GLEW)
-find_package(SDL2)
+# Build-compat fix (not a rebrand change): under Emscripten, modern CMake now
+# auto-creates OpenGL::GL here, which collides with the INTERFACE targets the
+# Emscripten branch defines below ("target already exists"). Skip these finds for
+# Emscripten so that branch can own the GL/GLEW/SDL2 imported targets as intended.
+if(NOT EMSCRIPTEN)
+	find_package(OpenGL)
+	find_package(GLEW)
+	find_package(SDL2)
+endif()
 
 set(common_src
 	src/wipeout/camera.c
@@ -54,6 +60,8 @@ set(common_src
 	src/wipeout/droid.h
 	src/wipeout/game.c
 	src/wipeout/game.h
+	src/wipeout/ghost.c
+	src/wipeout/ghost.h
 	src/wipeout/hud.c
 	src/wipeout/hud.h
 	src/wipeout/image.c
@@ -66,6 +74,8 @@ set(common_src
 	src/wipeout/main_menu.h
 	src/wipeout/menu.c
 	src/wipeout/menu.h
+	src/wipeout/net_test.c
+	src/wipeout/net_test.h
 	src/wipeout/object.c
 	src/wipeout/object.h
 	src/wipeout/particle.c
@@ -82,6 +92,8 @@ set(common_src
 	src/wipeout/ship_ai.h
 	src/wipeout/ship_player.c
 	src/wipeout/ship_player.h
+	src/wipeout/ship_remote.c
+	src/wipeout/ship_remote.h
 	src/wipeout/title.c
 	src/wipeout/title.h
 	src/wipeout/track.c
@@ -94,6 +106,8 @@ set(common_src
 	src/input.h
 	src/mem.c
 	src/mem.h
+	src/net.c
+	src/net.h
 	src/platform.h
 	src/render.h
 	src/system.c
@@ -109,6 +123,10 @@ set(common_src
 
 add_executable(wipeout WIN32 ${common_src})
 set_property(TARGET wipeout PROPERTY C_STANDARD 11)
+# Rebrand: emit the executable as "antigravity" without renaming the CMake target.
+# The target name `wipeout` is referenced ~30x below (and once as a data-path string),
+# so we change only the OUTPUT filename here.
+set_target_properties(wipeout PROPERTIES OUTPUT_NAME "antigravity")
 target_include_directories(wipeout PRIVATE src)
 target_include_directories(wipeout SYSTEM PRIVATE src/libs)
 target_compile_options(wipeout PRIVATE
@@ -160,11 +178,20 @@ elseif(EMSCRIPTEN)
 		INTERFACE_LINK_LIBRARIES  "SHELL:-s USE_SDL=2"
 	)
 
+	# Build-compat fix (not a rebrand change): emscripten's --preload-file splits its
+	# argument on spaces, so an absolute path containing a space (e.g. the "modding 2097"
+	# folder) breaks the link. Use a path RELATIVE to the build dir — no spaces in it.
+	file(RELATIVE_PATH wipeout_assets_rel "${CMAKE_CURRENT_BINARY_DIR}" "${CMAKE_SOURCE_DIR}/wipeout")
 	target_link_options(wipeout PRIVATE
 		"SHELL:-s ALLOW_MEMORY_GROWTH=1"
 		"SHELL:-s ENVIRONMENT=web"
 		"SHELL:-s FORCE_FILESYSTEM"
-		"SHELL:--preload-file ${CMAKE_SOURCE_DIR}/wipeout/@/wipeout"
+		# Build-compat fix (not a rebrand change): render_gl.c requests a WebGL2 context, but
+		# modern emscripten caps the build at WebGL1 by default — enable WebGL2 so it can render.
+		"SHELL:-s MAX_WEBGL_VERSION=2"
+		# Online multiplayer: link emscripten's WebSocket library (<emscripten/websocket.h>).
+		"SHELL:-lwebsocket.js"
+		"SHELL:--preload-file ${wipeout_assets_rel}@/wipeout"
 	)
 	if(MINIMAL_BUNDLE)
 		target_link_options(wipeout PRIVATE

@@ -72,6 +72,15 @@ vec3_t vec3_rand(float maxlen) {
 	return vec3_mulf(v, maxlen);
 }
 
+// Simulation variant of vec3_rand using the seedable sim PRNG.
+vec3_t vec3_sim_rand(float maxlen) {
+	vec3_t v;
+	do {
+		v = vec3(sim_rand_float(-1, 1), sim_rand_float(-1, 1), sim_rand_float(-1, 1));
+	} while (vec3_len_sq(v) > 1);
+	return vec3_mulf(v, maxlen);
+}
+
 void mat4_set_translation(mat4_t *mat, vec3_t pos) {
 	mat->cols[3][0] = pos.x;
 	mat->cols[3][1] = pos.y;

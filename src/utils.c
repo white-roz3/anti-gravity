@@ -66,3 +66,31 @@ float rand_float(float min, float max) {
 int32_t rand_int(int32_t min, int32_t max) {
 	return min + rand() % (max - min);
 }
+
+// Seedable xorshift32 PRNG for SIMULATION randomness (deterministic given a
+// seed). Use this for anything that perturbs ship state / race outcome so a
+// race can be reproduced from a seed (ghosts, future netcode). The libc
+// rand_float/rand_int above stay for VISUAL-only randomness (exhaust, camera
+// shake, particles, audio) which must not consume simulation entropy.
+static uint32_t sim_rng_state = 0x2545f491;
+
+void sim_rand_seed(uint32_t seed) {
+	sim_rng_state = seed ? seed : 0x2545f491;
+}
+
+static inline uint32_t sim_rand_u32(void) {
+	uint32_t x = sim_rng_state;
+	x ^= x << 13;
+	x ^= x >> 17;
+	x ^= x << 5;
+	sim_rng_state = x;
+	return x;
+}
+
+float sim_rand_float(float min, float max) {
+	return min + ((float)sim_rand_u32() / (float)UINT32_MAX) * (max - min);
+}
+
+int32_t sim_rand_int(int32_t min, int32_t max) {
+	return min + (int32_t)(sim_rand_u32() % (uint32_t)(max - min));
+}

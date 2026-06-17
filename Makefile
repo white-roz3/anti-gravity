@@ -90,7 +90,7 @@ endif
 
 # Source files -----------------------------------------------------------------
 
-TARGET_NATIVE ?= wipegame
+TARGET_NATIVE ?= antigravity
 BUILD_DIR = build/obj/native
 BUILD_DIR_WASM = build/obj/wasm
 

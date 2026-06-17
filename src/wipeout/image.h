@@ -28,6 +28,7 @@ cmp_t *image_load_compressed(char *name);
 
 uint16_t image_get_texture(char *name);
 uint16_t image_get_texture_semi_trans(char *name);
+uint16_t image_get_texture_raw(char *name);
 texture_list_t image_get_compressed_textures(char *name);
 uint16_t texture_from_list(texture_list_t tl, uint16_t index);
 
