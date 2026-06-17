@@ -76,6 +76,8 @@ set(common_src
 	src/wipeout/menu.h
 	src/wipeout/net_test.c
 	src/wipeout/net_test.h
+	src/wipeout/online.c
+	src/wipeout/online.h
 	src/wipeout/object.c
 	src/wipeout/object.h
 	src/wipeout/particle.c

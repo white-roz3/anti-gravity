@@ -12,6 +12,7 @@
 #include "ship.h"
 #include "ship_ai.h"
 #include "ship_player.h"
+#include "ship_remote.h"
 #include "game.h"
 #include "race.h"
 #include "sfx.h"
@@ -126,7 +127,12 @@ void ships_update(void) {
 	}
 	else {
 		for (int i = 0; i < len(g.ships); i++) {
-			ship_update(&g.ships[i]);
+			if (g.ships[i].control == SHIP_CONTROL_REMOTE) {
+				ship_remote_tick(&g.ships[i]); // networked puppet — transform + standings, no physics
+			}
+			else {
+				ship_update(&g.ships[i]);
+			}
 		}
 		for (int j = 0; j < (len(g.ships) - 1); j++) {
 			for (int i = j + 1; i < len(g.ships); i++) {

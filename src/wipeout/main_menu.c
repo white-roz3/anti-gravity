@@ -9,6 +9,7 @@
 #include "game.h"
 #include "image.h"
 #include "ui.h"
+#include "../net.h"
 
 static void page_main_init(menu_t *menu);
 static void page_options_init(menu_t *menu);
@@ -61,6 +62,10 @@ static void button_net_test(menu_t *menu, int data) {
 	game_set_scene(GAME_SCENE_NET_TEST);
 }
 
+static void button_online(menu_t *menu, int data) {
+	game_set_scene(GAME_SCENE_ONLINE);
+}
+
 static void button_quit_confirm(menu_t *menu, int data) {
 	if (data) {
 		system_exit();
@@ -91,6 +96,7 @@ static void page_main_init(menu_t *menu) {
 	page->items_anchor = UI_POS_BOTTOM | UI_POS_CENTER;
 
 	menu_page_add_button(page, 0, "START GAME", button_start_game);
+	menu_page_add_button(page, 0, "ONLINE RACE", button_online);
 	menu_page_add_button(page, 1, "OPTIONS", button_options);
 	menu_page_add_button(page, 0, "NETWORK TEST", button_net_test);
 
@@ -678,6 +684,10 @@ static void objects_unpack_imp(Object **dest_array, int len, Object *src) {
 
 
 void main_menu_init(void) {
+	if (g.is_online) { // returning from an online race — drop the connection
+		net_disconnect();
+		g.is_online = false;
+	}
 	g.is_attract_mode = false;
 
 	ships_reset_exhaust_plumes();

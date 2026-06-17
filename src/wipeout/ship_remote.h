@@ -15,4 +15,10 @@ void ship_remote_update(ship_t *self);
 // Switch a ship into remote/puppet mode, driven by `source`.
 void ship_set_remote(ship_t *self, remote_source_t source);
 
+// Per-tick update for a remote ship inside a multiplayer race: applies the
+// networked transform (via ship_remote_update) and recomputes total_section_num
+// so standings work — but runs NO physics / pickup / lap-crossing. Use this in
+// the ships_update loop for REMOTE ships instead of ship_update().
+void ship_remote_tick(ship_t *self);
+
 #endif

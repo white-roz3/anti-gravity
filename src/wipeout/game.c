@@ -21,6 +21,7 @@
 #include "title.h"
 #include "intro.h"
 #include "net_test.h"
+#include "online.h"
 
 #define TURN_ACCEL(V) NTSC_ACCELERATION(ANGLE_NORM_TO_RADIAN(FIXED_TO_FLOAT(YAW_VELOCITY(V))))
 #define TURN_VEL(V)   NTSC_VELOCITY(ANGLE_NORM_TO_RADIAN(FIXED_TO_FLOAT(YAW_VELOCITY(V))))
@@ -822,6 +823,7 @@ struct {
 	[GAME_SCENE_MAIN_MENU] = {main_menu_init, main_menu_update},
 	[GAME_SCENE_RACE] = {race_init, race_update},
 	[GAME_SCENE_NET_TEST] = {net_test_init, net_test_update},
+	[GAME_SCENE_ONLINE] = {online_init, online_update},
 };
 
 static game_scene_t scene_current = GAME_SCENE_NONE;

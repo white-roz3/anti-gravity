@@ -22,6 +22,8 @@
 #include "ship_ai.h"
 #include "ingame_menus.h"
 #include "ghost.h"
+#include "../net.h"
+#include "ship_remote.h"
 
 #define ATTRACT_DURATION 60.0
 
@@ -38,6 +40,8 @@ static menu_t *active_menu = NULL;
 #define RACE_SIM_DT (1.0 / RACE_SIM_HZ)
 #define RACE_MAX_STEPS 8
 static double sim_accumulator = 0;
+static int net_send_tick = 0;
+static uint16_t net_seq = 0;
 
 void race_init(void) {
 	ingame_menus_load();
@@ -98,6 +102,19 @@ void race_update(void) {
 			if (g.race_type == RACE_TYPE_TIME_TRIAL) {
 				ghost_record_tick(&g.ships[g.pilot]);
 				ghost_update();
+			}
+			if (g.is_online && ++net_send_tick >= 3) { // ~20 Hz (60/3)
+				net_send_tick = 0;
+				ship_t *me = &g.ships[g.pilot];
+				net_state_packet_t pkt = {0};
+				pkt.seq = net_seq++;
+				pkt.pos[0] = me->position.x; pkt.pos[1] = me->position.y; pkt.pos[2] = me->position.z;
+				pkt.vel[0] = me->velocity.x; pkt.vel[1] = me->velocity.y; pkt.vel[2] = me->velocity.z;
+				pkt.ang[0] = me->angle.x;    pkt.ang[1] = me->angle.y;    pkt.ang[2] = me->angle.z;
+				pkt.section = me->section_num;
+				pkt.lap = (int16_t)me->lap;
+				pkt.flags = (uint16_t)me->flags;
+				net_send_state(&pkt, sizeof(pkt));
 			}
 			droid_update(&g.droid, &g.ships[g.pilot]);
 			camera_update(&g.camera, &g.ships[g.pilot], &g.droid);
@@ -167,7 +184,7 @@ void race_start(void) {
 	// Seed the simulation PRNG per race. Varying (wall-clock) by default so
 	// races still differ run-to-run; can be overridden with a fixed seed for
 	// reproducible runs (ghosts / future netcode).
-	sim_rand_seed((uint32_t)(platform_now() * 1000.0));
+	sim_rand_seed(g.is_online ? g.online_seed : (uint32_t)(platform_now() * 1000.0));
 
 	active_menu = NULL;
 	sim_accumulator = 0;
@@ -177,6 +194,14 @@ void race_start(void) {
 	g.camera.update_func = camera_update_race_intro;
 	ships_init(g.track.sections);
 	ghost_begin_race();
+	if (g.is_online) {
+		// The other players' slots are driven by the network, not physics/AI.
+		for (int i = 0; i < NUM_PILOTS; i++) {
+			if (g.online_remote[i]) {
+				ship_set_remote(&g.ships[i], net_remote_source(i));
+			}
+		}
+	}
 	droid_init(&g.droid, &g.ships[g.pilot]);
 	particles_init();
 	weapons_init();

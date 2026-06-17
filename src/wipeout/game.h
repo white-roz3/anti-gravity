@@ -55,6 +55,7 @@ typedef enum {
 	GAME_SCENE_HIGHSCORES,
 	GAME_SCENE_RACE,
 	GAME_SCENE_NET_TEST,
+	GAME_SCENE_ONLINE,
 	GAME_SCENE_NONE,
 	NUM_GAME_SCENES
 } game_scene_t;
@@ -235,6 +236,10 @@ typedef struct {
 	int circut;
 	bool is_attract_mode;
 	bool show_credits;
+
+	bool is_online;
+	uint32_t online_seed;
+	bool online_remote[NUM_PILOTS];
 
 	bool is_new_lap_record;
 	bool is_new_race_record;

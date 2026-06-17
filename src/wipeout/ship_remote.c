@@ -3,6 +3,8 @@
 #include "../system.h"
 #include "ship.h"
 #include "ship_remote.h"
+#include "game.h"
+#include "track.h"
 
 // Shortest-arc interpolation between two wrapped angles (radians).
 static float lerp_angle(float a, float b, float t) {
@@ -46,4 +48,20 @@ void ship_set_remote(ship_t *self, remote_source_t source) {
 	self->control = SHIP_CONTROL_REMOTE;
 	self->remote_source = source;
 	self->update_func = ship_remote_update;
+}
+
+void ship_remote_tick(ship_t *self) {
+	self->prev_section = self->section;
+	self->prev_section_num = self->section_num;
+
+	ship_remote_update(self); // networked transform; sets section_num + lap; rebuilds mat
+
+	// Recompute total_section_num for standings (mirrors ship_update's tail) —
+	// no physics, pickups, or lap-crossing detection for a puppet.
+	int start_line_pos = def.circuts[g.circut].settings[g.race_class].start_line_pos;
+	int section_num_from_line = self->section_num - (start_line_pos + 1);
+	if (section_num_from_line < 0) {
+		section_num_from_line += g.track.section_count;
+	}
+	self->total_section_num = self->lap * g.track.section_count + section_num_from_line;
 }
