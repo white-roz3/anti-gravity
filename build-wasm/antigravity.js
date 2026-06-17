@@ -74,7 +74,7 @@ var ENVIRONMENT_IS_SHELL = !ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_NODE && !ENVIR
 
 // --pre-jses are emitted after the Module integration code, so that they can
 // refer to Module (if they choose; they can also define Module)
-// include: /var/folders/8b/gfddzdh9435gy0r8ys7shrbr0000gn/T/tmpyd5_3glh.js
+// include: /var/folders/8b/gfddzdh9435gy0r8ys7shrbr0000gn/T/tmptdjqqfgp.js
 
   if (!Module['expectedDataFileDownloads']) Module['expectedDataFileDownloads'] = 0;
   Module['expectedDataFileDownloads']++;
@@ -221,21 +221,21 @@ Module['FS_createPath']("/wipeout", "track14", true, true);
 
   })();
 
-// end include: /var/folders/8b/gfddzdh9435gy0r8ys7shrbr0000gn/T/tmpyd5_3glh.js
-// include: /var/folders/8b/gfddzdh9435gy0r8ys7shrbr0000gn/T/tmptbuejjas.js
+// end include: /var/folders/8b/gfddzdh9435gy0r8ys7shrbr0000gn/T/tmptdjqqfgp.js
+// include: /var/folders/8b/gfddzdh9435gy0r8ys7shrbr0000gn/T/tmp8vvydajc.js
 
     // All the pre-js content up to here must remain later on, we need to run
     // it.
     if ((typeof ENVIRONMENT_IS_WASM_WORKER != 'undefined' && ENVIRONMENT_IS_WASM_WORKER) || (typeof ENVIRONMENT_IS_PTHREAD != 'undefined' && ENVIRONMENT_IS_PTHREAD) || (typeof ENVIRONMENT_IS_AUDIO_WORKLET != 'undefined' && ENVIRONMENT_IS_AUDIO_WORKLET)) Module['preRun'] = [];
     var necessaryPreJSTasks = Module['preRun'].slice();
-  // end include: /var/folders/8b/gfddzdh9435gy0r8ys7shrbr0000gn/T/tmptbuejjas.js
-// include: /var/folders/8b/gfddzdh9435gy0r8ys7shrbr0000gn/T/tmpa24b4y4m.js
+  // end include: /var/folders/8b/gfddzdh9435gy0r8ys7shrbr0000gn/T/tmp8vvydajc.js
+// include: /var/folders/8b/gfddzdh9435gy0r8ys7shrbr0000gn/T/tmpe0ma0vsq.js
 
     if (!Module['preRun']) throw 'Module.preRun should exist because file support used it; did a pre-js delete it?';
     necessaryPreJSTasks.forEach((task) => {
       if (Module['preRun'].indexOf(task) < 0) throw 'All preRun tasks that exist before user pre-js code should remain after; did you replace Module or modify Module.preRun?';
     });
-  // end include: /var/folders/8b/gfddzdh9435gy0r8ys7shrbr0000gn/T/tmpa24b4y4m.js
+  // end include: /var/folders/8b/gfddzdh9435gy0r8ys7shrbr0000gn/T/tmpe0ma0vsq.js
 
 
 var arguments_ = [];
@@ -363,10 +363,6 @@ function assert(condition, text) {
 
 // We used to include malloc/free by default in the past. Show a helpful error in
 // builds with assertions.
-function _free() {
-  // Show a helpful error since we used to include free by default in the past.
-  abort('free() called but not included in the build - add `_free` to EXPORTED_FUNCTIONS');
-}
 
 /**
  * Indicates whether filename is delivered via file protocol (as opposed to http/https)
@@ -3898,6 +3894,48 @@ var stringToUTF8Array = (str, heap, outIdx, maxBytesToWrite) => {
   var __abort_js = () =>
       abort('native code called abort()');
 
+  var readEmAsmArgsArray = [];
+  var readEmAsmArgs = (sigPtr, buf) => {
+      // Nobody should have mutated _readEmAsmArgsArray underneath us to be something else than an array.
+      assert(Array.isArray(readEmAsmArgsArray));
+      // The input buffer is allocated on the stack, so it must be stack-aligned.
+      assert(buf % 16 == 0);
+      readEmAsmArgsArray.length = 0;
+      var ch;
+      // Most arguments are i32s, so shift the buffer pointer so it is a plain
+      // index into HEAP32.
+      while (ch = HEAPU8[sigPtr++]) {
+        var chr = String.fromCharCode(ch);
+        var validChars = ['d', 'f', 'i', 'p'];
+        // In WASM_BIGINT mode we support passing i64 values as bigint.
+        validChars.push('j');
+        assert(validChars.includes(chr), `Invalid character ${ch}("${chr}") in readEmAsmArgs! Use only [${validChars}], and do not specify "v" for void return argument.`);
+        // Floats are always passed as doubles, so all types except for 'i'
+        // are 8 bytes and require alignment.
+        var wide = (ch != 105);
+        wide &= (ch != 112);
+        buf += wide && (buf % 8) ? 4 : 0;
+        readEmAsmArgsArray.push(
+          // Special case for pointers under wasm64 or CAN_ADDRESS_2GB mode.
+          ch == 112 ? HEAPU32[((buf)>>2)] :
+          ch == 106 ? HEAP64[((buf)>>3)] :
+          ch == 105 ?
+            HEAP32[((buf)>>2)] :
+            HEAPF64[((buf)>>3)]
+        );
+        buf += wide ? 8 : 4;
+      }
+      return readEmAsmArgsArray;
+    };
+  var runEmAsmFunction = (code, sigPtr, argbuf) => {
+      var args = readEmAsmArgs(sigPtr, argbuf);
+      assert(ASM_CONSTS.hasOwnProperty(code), `No EM_ASM constant found at address ${code}.  The loaded WebAssembly file is likely out of sync with the generated JavaScript.`);
+      return ASM_CONSTS[code](...args);
+    };
+  var _emscripten_asm_const_int = (code, sigPtr, argbuf) => {
+      return runEmAsmFunction(code, sigPtr, argbuf);
+    };
+
   var _emscripten_get_device_pixel_ratio = () => {
       return devicePixelRatio;
     };
@@ -5019,6 +5057,211 @@ var stringToUTF8Array = (str, heap, outIdx, maxBytesToWrite) => {
       return success ? 0 : -5;
     };
 
+  class HandleAllocator {
+      allocated = [undefined];
+      freelist = [];
+      get(id) {
+        assert(this.allocated[id] !== undefined, `invalid handle: ${id}`);
+        return this.allocated[id];
+      }
+      has(id) {
+        return this.allocated[id] !== undefined;
+      }
+      allocate(handle) {
+        var id = this.freelist.pop() || this.allocated.length;
+        this.allocated[id] = handle;
+        return id;
+      }
+      free(id) {
+        assert(this.allocated[id] !== undefined);
+        // Set the slot to `undefined` rather than using `delete` here since
+        // apparently arrays with holes in them can be less efficient.
+        this.allocated[id] = undefined;
+        this.freelist.push(id);
+      }
+    }
+  var webSockets = new HandleAllocator();;
+  
+  var WS = {
+  socketEvent:null,
+  getSocket(socketId) {
+        if (!webSockets.has(socketId)) {
+          return 0;
+        }
+        return webSockets.get(socketId);
+      },
+  getSocketEvent(socketId) {
+        // Singleton event pointer.  Use EmscriptenWebSocketCloseEvent, which is
+        // the largest event struct
+        this.socketEvent ||= _malloc(520);
+        HEAPU32[((this.socketEvent)>>2)] = socketId;
+        return this.socketEvent;
+      },
+  };
+  
+  var _emscripten_websocket_close = (socketId, code, reason) => {
+      var socket = WS.getSocket(socketId);
+      if (!socket) {
+        return -3;
+      }
+  
+      var reasonStr = reason ? UTF8ToString(reason) : undefined;
+      // According to WebSocket specification, only close codes that are recognized have integer values
+      // 1000-4999, with 3000-3999 and 4000-4999 denoting user-specified close codes:
+      // https://developer.mozilla.org/en-US/docs/Web/API/CloseEvent#Status_codes
+      // Therefore be careful to call the .close() function with exact number and types of parameters.
+      // Coerce code==0 to undefined, since Wasm->JS call can only marshal integers, and 0 is not allowed.
+      if (reason) socket.close(code || undefined, UTF8ToString(reason));
+      else if (code) socket.close(code);
+      else socket.close();
+      return 0;
+    };
+
+  var _emscripten_websocket_delete = (socketId) => {
+      var socket = WS.getSocket(socketId);
+      if (!socket) {
+        return -3;
+      }
+  
+      socket.onopen = socket.onerror = socket.onclose = socket.onmessage = null;
+      webSockets.free(socketId);
+      return 0;
+    };
+
+  var _emscripten_websocket_is_supported = () => typeof WebSocket != 'undefined';
+
+  
+  var _emscripten_websocket_new = (createAttributes) => {
+      if (!globalThis.WebSocket) {
+        return -1;
+      }
+      if (!createAttributes) {
+        return -5;
+      }
+  
+      var url = UTF8ToString(HEAPU32[((createAttributes)>>2)]);
+      var protocols = HEAPU32[(((createAttributes)+(4))>>2)]
+      // TODO: Add support for createOnMainThread==false; currently all WebSocket connections are created on the main thread.
+      // var createOnMainThread = HEAP8[createAttributes+2];
+  
+      var socket = protocols ? new WebSocket(url, UTF8ToString(protocols).split(',')) : new WebSocket(url);
+      // We always marshal received WebSocket data back to Wasm, so enable receiving the data as arraybuffers for easy marshalling.
+      socket.binaryType = 'arraybuffer';
+      // TODO: While strictly not necessary, this ID would be good to be unique across all threads to avoid confusion.
+      var socketId = webSockets.allocate(socket);
+  
+      return socketId;
+    };
+
+  var _emscripten_websocket_send_binary = (socketId, binaryData, dataLength) => {
+      var socket = WS.getSocket(socketId);
+      if (!socket) {
+        return -3;
+      }
+  
+      socket.send(HEAPU8.subarray((binaryData), binaryData+dataLength));
+      return 0;
+    };
+
+  
+  var _emscripten_websocket_send_utf8_text = (socketId, textData) => {
+      var socket = WS.getSocket(socketId);
+      if (!socket) {
+        return -3;
+      }
+  
+      var str = UTF8ToString(textData);
+      socket.send(str);
+      return 0;
+    };
+
+  
+  
+  var _emscripten_websocket_set_onclose_callback_on_thread = (socketId, userData, callbackFunc, thread) => {
+      var socket = WS.getSocket(socketId);
+      if (!socket) {
+        return -3;
+      }
+  
+      socket.onclose = (e) => {
+        var eventPtr = WS.getSocketEvent(socketId);
+        HEAP8[(eventPtr)+(4)] = e.wasClean,
+        HEAP16[(((eventPtr)+(6))>>1)] = e.code,
+        stringToUTF8(e.reason, eventPtr + 8, 512);
+        getWasmTableEntry(callbackFunc)(0/*TODO*/, eventPtr, userData);
+      }
+      return 0;
+    };
+
+  
+  var _emscripten_websocket_set_onerror_callback_on_thread = (socketId, userData, callbackFunc, thread) => {
+      var socket = WS.getSocket(socketId);
+      if (!socket) {
+        return -3;
+      }
+  
+      socket.onerror = (e) => {
+        var eventPtr = WS.getSocketEvent(socketId);
+        getWasmTableEntry(callbackFunc)(0/*TODO*/, eventPtr, userData);
+      }
+      return 0;
+    };
+
+  
+  
+  
+  var stringToNewUTF8 = (str) => {
+      var size = lengthBytesUTF8(str) + 1;
+      var ret = _malloc(size);
+      if (ret) stringToUTF8(str, ret, size);
+      return ret;
+    };
+  
+  
+  
+  var _emscripten_websocket_set_onmessage_callback_on_thread = (socketId, userData, callbackFunc, thread) => {
+      var socket = WS.getSocket(socketId);
+      if (!socket) {
+        return -3;
+      }
+  
+      socket.onmessage = (e) => {
+        var isText = typeof e.data == 'string';
+        if (isText) {
+          var buf = stringToNewUTF8(e.data);
+          var len = lengthBytesUTF8(e.data)+1;
+        } else {
+          var len = e.data.byteLength;
+          var buf = _malloc(len);
+          HEAP8.set(new Uint8Array(e.data), buf);
+        }
+        var eventPtr = WS.getSocketEvent(socketId);
+        HEAPU32[(((eventPtr)+(4))>>2)] = buf,
+        HEAP32[(((eventPtr)+(8))>>2)] = len,
+        HEAP8[(eventPtr)+(12)] = isText,
+        getWasmTableEntry(callbackFunc)(0/*TODO*/, eventPtr, userData);
+        _free(buf);
+      }
+      return 0;
+    };
+
+  
+  var _emscripten_websocket_set_onopen_callback_on_thread = (socketId, userData, callbackFunc, thread) => {
+  // TODO:
+  //    if (thread == 2 ||
+  //      (thread == _pthread_self()) return emscripten_websocket_set_onopen_callback_on_calling_thread(socketId, userData, callbackFunc);
+      var socket = WS.getSocket(socketId);
+      if (!socket) {
+        return -3;
+      }
+  
+      socket.onopen = (e) => {
+        var eventPtr = WS.getSocketEvent(socketId);
+        getWasmTableEntry(callbackFunc)(0/*TODO*/, eventPtr, userData);
+      }
+      return 0;
+    };
+
   
   var runtimeKeepaliveCounter = 0;
   var keepRuntimeAlive = () => noExitRuntime || runtimeKeepaliveCounter > 0;
@@ -5867,14 +6110,6 @@ var stringToUTF8Array = (str, heap, outIdx, maxBytesToWrite) => {
 
   
   
-  var stringToNewUTF8 = (str) => {
-      var size = lengthBytesUTF8(str) + 1;
-      var ret = _malloc(size);
-      if (ret) stringToUTF8(str, ret, size);
-      return ret;
-    };
-  
-  
   var _emscripten_glGetString = (name_) => {
       var ret = GL.stringCache[name_];
       if (!ret) {
@@ -6046,6 +6281,88 @@ var stringToUTF8Array = (str, heap, outIdx, maxBytesToWrite) => {
   var allocateUTF8OnStack = (...args) => stringToUTF8OnStack(...args);
 
 
+  var getCFunc = (ident) => {
+      var func = Module['_' + ident]; // closure exported function
+      assert(func, `Cannot call unknown function ${ident}, make sure it is exported`);
+      return func;
+    };
+  
+  var writeArrayToMemory = (array, buffer) => {
+      assert(array.length >= 0, 'writeArrayToMemory array must have a length (should be an array or typed array)')
+      HEAP8.set(array, buffer);
+    };
+  
+  
+  
+  
+  
+  
+    /**
+   * @param {string|null=} returnType
+   * @param {Array=} argTypes
+   * @param {Array=} args
+   * @param {Object=} opts
+   */
+  var ccall = (ident, returnType, argTypes, args, opts) => {
+      // For fast lookup of conversion functions
+      var toC = {
+        'string': (str) => {
+          var ret = 0;
+          if (str !== null && str !== undefined && str !== 0) { // null string
+            ret = stringToUTF8OnStack(str);
+          }
+          return ret;
+        },
+        'array': (arr) => {
+          var ret = stackAlloc(arr.length);
+          writeArrayToMemory(arr, ret);
+          return ret;
+        }
+      };
+  
+      function convertReturnValue(ret) {
+        if (returnType === 'string') {
+          return UTF8ToString(ret);
+        }
+        if (returnType === 'boolean') return Boolean(ret);
+        return ret;
+      }
+  
+      var func = getCFunc(ident);
+      var cArgs = [];
+      var stack = 0;
+      assert(returnType !== 'array', 'return type should not be "array"');
+      if (args) {
+        for (var i = 0; i < args.length; i++) {
+          var converter = toC[argTypes[i]];
+          if (converter) {
+            if (stack === 0) stack = stackSave();
+            cArgs[i] = converter(args[i]);
+          } else {
+            cArgs[i] = args[i];
+          }
+        }
+      }
+      var ret = func(...cArgs);
+      function onDone(ret) {
+        if (stack !== 0) stackRestore(stack);
+        return convertReturnValue(ret);
+      }
+  
+      ret = onDone(ret);
+      return ret;
+    };
+
+  
+    /**
+   * @param {string=} returnType
+   * @param {Array=} argTypes
+   * @param {Object=} opts
+   */
+  var cwrap = (ident, returnType, argTypes, opts) => {
+      return (...args) => ccall(ident, returnType, argTypes, args, opts);
+    };
+
   var FS_createPath = (...args) => FS.createPath(...args);
 
 
@@ -6115,6 +6432,8 @@ if (Module['wasmBinary']) wasmBinary = Module['wasmBinary'];
 // Begin runtime exports
   Module['addRunDependency'] = addRunDependency;
   Module['removeRunDependency'] = removeRunDependency;
+  Module['ccall'] = ccall;
+  Module['cwrap'] = cwrap;
   Module['FS_preloadFile'] = FS_preloadFile;
   Module['FS_unlink'] = FS_unlink;
   Module['FS_createPath'] = FS_createPath;
@@ -6139,7 +6458,7 @@ if (Module['wasmBinary']) wasmBinary = Module['wasmBinary'];
   'inetNtop6',
   'readSockaddr',
   'writeSockaddr',
-  'readEmAsmArgs',
+  'runMainThreadEmAsm',
   'getExecutableName',
   'autoResumeAudioContext',
   'getDynCaller',
@@ -6149,7 +6468,6 @@ if (Module['wasmBinary']) wasmBinary = Module['wasmBinary'];
   'callUserCallback',
   'maybeExit',
   'asmjsMangle',
-  'HandleAllocator',
   'addOnInit',
   'addOnPostCtor',
   'addOnPreMain',
@@ -6157,8 +6475,6 @@ if (Module['wasmBinary']) wasmBinary = Module['wasmBinary'];
   'STACK_ALIGN',
   'POINTER_SIZE',
   'ASSERTIONS',
-  'ccall',
-  'cwrap',
   'convertJsFunctionToWasm',
   'getEmptyTableSlot',
   'updateTableMap',
@@ -6174,7 +6490,6 @@ if (Module['wasmBinary']) wasmBinary = Module['wasmBinary'];
   'UTF32ToString',
   'stringToUTF32',
   'lengthBytesUTF32',
-  'writeArrayToMemory',
   'fillDeviceOrientationEventData',
   'registerDeviceOrientationEventCallback',
   'fillDeviceMotionEventData',
@@ -6292,12 +6607,15 @@ missingLibrarySymbols.forEach(missingLibrarySymbol)
   'timers',
   'warnOnce',
   'readEmAsmArgsArray',
+  'readEmAsmArgs',
+  'runEmAsmFunction',
   'jstoi_q',
   'handleException',
   'keepRuntimeAlive',
   'asyncLoad',
   'alignMemory',
   'mmapAlloc',
+  'HandleAllocator',
   'wasmTable',
   'wasmMemory',
   'getUniqueRunDependency',
@@ -6321,6 +6639,7 @@ missingLibrarySymbols.forEach(missingLibrarySymbol)
   'UTF16Decoder',
   'stringToNewUTF8',
   'stringToUTF8OnStack',
+  'writeArrayToMemory',
   'JSEvents',
   'registerKeyEventCallback',
   'specialHTMLTargets',
@@ -6514,6 +6833,8 @@ missingLibrarySymbols.forEach(missingLibrarySymbol)
   'print',
   'printErr',
   'jstoi_s',
+  'webSockets',
+  'WS',
 ];
 unexportedSymbols.forEach(unexportedRuntimeSymbol);
 
@@ -6532,6 +6853,11 @@ function checkIncomingModuleAPI() {
   ignoredModuleProp('onFree');
   ignoredModuleProp('onSbrkGrow');
 }
+var ASM_CONSTS = {
+  118936: ($0, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) => { if (window.AG && window.AG.onFrame) { window.AG.onFrame($0, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15); } },  
+ 119069: ($0) => { if (window.AG && window.AG.onScene) { window.AG.onScene(UTF8ToString($0)); } },  
+ 119150: ($0) => { if (window.AG && window.AG.onRaceOver) { window.AG.onRaceOver(UTF8ToString($0)); } }
+};
 function saudio_js_init(sample_rate,num_channels,buffer_size) { Module._saudio_context = null; Module._saudio_node = null; if (typeof AudioContext !== 'undefined') { Module._saudio_context = new AudioContext({ sampleRate: sample_rate, latencyHint: 'interactive', }); } else { Module._saudio_context = null; console.log('sokol_audio.h: no WebAudio support'); } if (Module._saudio_context) { console.log('sokol_audio.h: sample rate ', Module._saudio_context.sampleRate); Module._saudio_node = Module._saudio_context.createScriptProcessor(buffer_size, 0, num_channels); Module._saudio_node.onaudioprocess = (event) => { const num_frames = event.outputBuffer.length; const ptr = __saudio_emsc_pull(num_frames); if (ptr) { const num_channels = event.outputBuffer.numberOfChannels; for (let chn = 0; chn < num_channels; chn++) { const chan = event.outputBuffer.getChannelData(chn); for (let i = 0; i < num_frames; i++) { chan[i] = HEAPF32[(ptr>>2) + ((num_channels*i)+chn)] } } } }; Module._saudio_node.connect(Module._saudio_context.destination); const resume_webaudio = () => { if (Module._saudio_context) { if (Module._saudio_context.state === 'suspended') { Module._saudio_context.resume(); } } }; document.addEventListener('click', resume_webaudio, {once:true}); document.addEventListener('touchend', resume_webaudio, {once:true}); document.addEventListener('keydown', resume_webaudio, {once:true}); return 1; } else { return 0; } }
 function saudio_js_shutdown() { /** @suppress {missingProperties} */ const ctx = Module._saudio_context; if (ctx !== null) { if (Module._saudio_node) { Module._saudio_node.disconnect(); } ctx.close(); Module._saudio_context = null; Module._saudio_node = null; } }
 function saudio_js_sample_rate() { if (Module._saudio_context) { return Module._saudio_context.sampleRate; } else { return 0; } }
@@ -6558,7 +6884,17 @@ function sapp_js_set_favicon(w,h,pixels) { const canvas = document.createElement
 
 // Imports from the Wasm binary.
 var _malloc = makeInvalidEarlyAccess('_malloc');
+var _free = makeInvalidEarlyAccess('_free');
 var _set_button = Module['_set_button'] = makeInvalidEarlyAccess('_set_button');
+var _ag_start_race = Module['_ag_start_race'] = makeInvalidEarlyAccess('_ag_start_race');
+var _ag_get_state_json = Module['_ag_get_state_json'] = makeInvalidEarlyAccess('_ag_get_state_json');
+var _ag_pause = Module['_ag_pause'] = makeInvalidEarlyAccess('_ag_pause');
+var _ag_unpause = Module['_ag_unpause'] = makeInvalidEarlyAccess('_ag_unpause');
+var _ag_restart = Module['_ag_restart'] = makeInvalidEarlyAccess('_ag_restart');
+var _ag_quit_to_menu = Module['_ag_quit_to_menu'] = makeInvalidEarlyAccess('_ag_quit_to_menu');
+var _ag_results_continue = Module['_ag_results_continue'] = makeInvalidEarlyAccess('_ag_results_continue');
+var _ag_submit_name = Module['_ag_submit_name'] = makeInvalidEarlyAccess('_ag_submit_name');
+var _ag_set_option = Module['_ag_set_option'] = makeInvalidEarlyAccess('_ag_set_option');
 var __saudio_emsc_pull = Module['__saudio_emsc_pull'] = makeInvalidEarlyAccess('__saudio_emsc_pull');
 var __sapp_emsc_notify_keyboard_hidden = Module['__sapp_emsc_notify_keyboard_hidden'] = makeInvalidEarlyAccess('__sapp_emsc_notify_keyboard_hidden');
 var __sapp_emsc_onpaste = Module['__sapp_emsc_onpaste'] = makeInvalidEarlyAccess('__sapp_emsc_onpaste');
@@ -6584,7 +6920,17 @@ var wasmTable = makeInvalidEarlyAccess('wasmTable');
 
 function assignWasmExports(wasmExports) {
   assert(typeof wasmExports['malloc'] != 'undefined', 'missing Wasm export: malloc');
+  assert(typeof wasmExports['free'] != 'undefined', 'missing Wasm export: free');
   assert(typeof wasmExports['set_button'] != 'undefined', 'missing Wasm export: set_button');
+  assert(typeof wasmExports['ag_start_race'] != 'undefined', 'missing Wasm export: ag_start_race');
+  assert(typeof wasmExports['ag_get_state_json'] != 'undefined', 'missing Wasm export: ag_get_state_json');
+  assert(typeof wasmExports['ag_pause'] != 'undefined', 'missing Wasm export: ag_pause');
+  assert(typeof wasmExports['ag_unpause'] != 'undefined', 'missing Wasm export: ag_unpause');
+  assert(typeof wasmExports['ag_restart'] != 'undefined', 'missing Wasm export: ag_restart');
+  assert(typeof wasmExports['ag_quit_to_menu'] != 'undefined', 'missing Wasm export: ag_quit_to_menu');
+  assert(typeof wasmExports['ag_results_continue'] != 'undefined', 'missing Wasm export: ag_results_continue');
+  assert(typeof wasmExports['ag_submit_name'] != 'undefined', 'missing Wasm export: ag_submit_name');
+  assert(typeof wasmExports['ag_set_option'] != 'undefined', 'missing Wasm export: ag_set_option');
   assert(typeof wasmExports['_saudio_emsc_pull'] != 'undefined', 'missing Wasm export: _saudio_emsc_pull');
   assert(typeof wasmExports['_sapp_emsc_notify_keyboard_hidden'] != 'undefined', 'missing Wasm export: _sapp_emsc_notify_keyboard_hidden');
   assert(typeof wasmExports['_sapp_emsc_onpaste'] != 'undefined', 'missing Wasm export: _sapp_emsc_onpaste');
@@ -6606,7 +6952,17 @@ function assignWasmExports(wasmExports) {
   assert(typeof wasmExports['memory'] != 'undefined', 'missing Wasm export: memory');
   assert(typeof wasmExports['__indirect_function_table'] != 'undefined', 'missing Wasm export: __indirect_function_table');
   _malloc = createExportWrapper('malloc', 1);
+  _free = createExportWrapper('free', 1);
   _set_button = Module['_set_button'] = createExportWrapper('set_button', 2);
+  _ag_start_race = Module['_ag_start_race'] = createExportWrapper('ag_start_race', 5);
+  _ag_get_state_json = Module['_ag_get_state_json'] = createExportWrapper('ag_get_state_json', 0);
+  _ag_pause = Module['_ag_pause'] = createExportWrapper('ag_pause', 0);
+  _ag_unpause = Module['_ag_unpause'] = createExportWrapper('ag_unpause', 0);
+  _ag_restart = Module['_ag_restart'] = createExportWrapper('ag_restart', 0);
+  _ag_quit_to_menu = Module['_ag_quit_to_menu'] = createExportWrapper('ag_quit_to_menu', 0);
+  _ag_results_continue = Module['_ag_results_continue'] = createExportWrapper('ag_results_continue', 0);
+  _ag_submit_name = Module['_ag_submit_name'] = createExportWrapper('ag_submit_name', 1);
+  _ag_set_option = Module['_ag_set_option'] = createExportWrapper('ag_set_option', 2);
   __saudio_emsc_pull = Module['__saudio_emsc_pull'] = createExportWrapper('_saudio_emsc_pull', 1);
   __sapp_emsc_notify_keyboard_hidden = Module['__sapp_emsc_notify_keyboard_hidden'] = createExportWrapper('_sapp_emsc_notify_keyboard_hidden', 0);
   __sapp_emsc_onpaste = Module['__sapp_emsc_onpaste'] = createExportWrapper('_sapp_emsc_onpaste', 1);
@@ -6648,6 +7004,8 @@ var wasmImports = {
   __syscall_stat64: ___syscall_stat64,
   /** @export */
   _abort_js: __abort_js,
+  /** @export */
+  emscripten_asm_const_int: _emscripten_asm_const_int,
   /** @export */
   emscripten_get_device_pixel_ratio: _emscripten_get_device_pixel_ratio,
   /** @export */
@@ -6706,6 +7064,26 @@ var wasmImports = {
   emscripten_webgl_enable_extension: _emscripten_webgl_enable_extension,
   /** @export */
   emscripten_webgl_make_context_current: _emscripten_webgl_make_context_current,
+  /** @export */
+  emscripten_websocket_close: _emscripten_websocket_close,
+  /** @export */
+  emscripten_websocket_delete: _emscripten_websocket_delete,
+  /** @export */
+  emscripten_websocket_is_supported: _emscripten_websocket_is_supported,
+  /** @export */
+  emscripten_websocket_new: _emscripten_websocket_new,
+  /** @export */
+  emscripten_websocket_send_binary: _emscripten_websocket_send_binary,
+  /** @export */
+  emscripten_websocket_send_utf8_text: _emscripten_websocket_send_utf8_text,
+  /** @export */
+  emscripten_websocket_set_onclose_callback_on_thread: _emscripten_websocket_set_onclose_callback_on_thread,
+  /** @export */
+  emscripten_websocket_set_onerror_callback_on_thread: _emscripten_websocket_set_onerror_callback_on_thread,
+  /** @export */
+  emscripten_websocket_set_onmessage_callback_on_thread: _emscripten_websocket_set_onmessage_callback_on_thread,
+  /** @export */
+  emscripten_websocket_set_onopen_callback_on_thread: _emscripten_websocket_set_onopen_callback_on_thread,
   /** @export */
   exit: _exit,
   /** @export */

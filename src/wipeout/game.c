@@ -22,6 +22,8 @@
 #include "intro.h"
 #include "net_test.h"
 #include "online.h"
+#include "frontend.h"
+#include "../bridge.h"
 
 #define TURN_ACCEL(V) NTSC_ACCELERATION(ANGLE_NORM_TO_RADIAN(FIXED_TO_FLOAT(YAW_VELOCITY(V))))
 #define TURN_VEL(V)   NTSC_VELOCITY(ANGLE_NORM_TO_RADIAN(FIXED_TO_FLOAT(YAW_VELOCITY(V))))
@@ -824,6 +826,7 @@ struct {
 	[GAME_SCENE_RACE] = {race_init, race_update},
 	[GAME_SCENE_NET_TEST] = {net_test_init, net_test_update},
 	[GAME_SCENE_ONLINE] = {online_init, online_update},
+	[GAME_SCENE_FRONTEND] = {frontend_init, frontend_update},
 };
 
 static game_scene_t scene_current = GAME_SCENE_NONE;
@@ -934,11 +937,25 @@ void game_init(void) {
 	}
 
 
+	// On WASM the React shell owns all menus, so boot into the dormant FRONTEND
+	// backdrop scene instead of the in-engine main menu. Native keeps the C menu.
+#ifdef __EMSCRIPTEN__
+	game_set_scene(GAME_SCENE_FRONTEND);
+#else
 	game_set_scene(GAME_SCENE_MAIN_MENU);
+#endif
 }
 
 void game_set_scene(game_scene_t scene) {
 	sfx_reset();
+#ifdef __EMSCRIPTEN__
+	// The C menu / title / intro scenes are bitmap UI that doesn't exist on WASM —
+	// every route to them (pause quit, results, attract timeout, intro) returns to
+	// the React frontend. This also prevents the C attract-demo loop on WASM.
+	if (scene == GAME_SCENE_MAIN_MENU || scene == GAME_SCENE_TITLE || scene == GAME_SCENE_INTRO) {
+		scene = GAME_SCENE_FRONTEND;
+	}
+#endif
 	scene_next = scene;
 }
 
@@ -967,6 +984,9 @@ void game_update(void) {
 		render_textures_reset(global_textures_len);
 		mem_reset(global_mem_mark);
 		system_reset_cycle_time();
+
+		// Notify the React shell of the new scene (no-op on native).
+		ag_on_scene(scene_current);
 
 		if (scene_current != GAME_SCENE_NONE) {
 			game_scenes[scene_current].init();

@@ -10,7 +10,7 @@
 		<style>
 			html, body {
 				color: #ccc;
-				font-family: Monospace;
+				font-family: 'Arial Narrow', 'Avenir Next', 'Helvetica Neue', Helvetica, Arial, sans-serif;
 				font-size: 13px;
 				background-color: #111;
 				margin: 0px;
@@ -325,8 +325,11 @@
 				document.getElementById('loading').style.display = 'none';
 				window.scrollTo(0, 0);
 
-				// Setup touch buttons if this is a touch device
-				if (true) { /* forced: always show the mobile touch layout, even on desktop */
+				// Setup touch buttons only on touch devices (desktop/PC stays clean).
+				let isTouchDevice = (window.matchMedia && window.matchMedia('(pointer: coarse)').matches)
+					|| navigator.maxTouchPoints > 0
+					|| ('ontouchstart' in window);
+				if (isTouchDevice) {
 					document.getElementById('head').style.display = 'none';
 					document.body.classList.add('touch');
 					let touchButtons = document.getElementsByClassName('button');

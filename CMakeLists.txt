@@ -78,6 +78,8 @@ set(common_src
 	src/wipeout/net_test.h
 	src/wipeout/online.c
 	src/wipeout/online.h
+	src/wipeout/frontend.c
+	src/wipeout/frontend.h
 	src/wipeout/object.c
 	src/wipeout/object.h
 	src/wipeout/particle.c
@@ -118,6 +120,9 @@ set(common_src
 	src/types.h
 	src/utils.c
 	src/utils.h
+
+	src/bridge.c
+	src/bridge.h
 
 	packaging/windows/wipeout.exe.manifest
 	packaging/windows/wipeout.rc
@@ -193,6 +198,8 @@ elseif(EMSCRIPTEN)
 		"SHELL:-s MAX_WEBGL_VERSION=2"
 		# Online multiplayer: link emscripten's WebSocket library (<emscripten/websocket.h>).
 		"SHELL:-lwebsocket.js"
+		# React shell bridge: export ccall/cwrap so JS can invoke exported C commands (P2/P3).
+		"SHELL:-s EXPORTED_RUNTIME_METHODS=['ccall','cwrap']"
 		"SHELL:--preload-file ${wipeout_assets_rel}@/wipeout"
 	)
 	if(MINIMAL_BUNDLE)

@@ -24,6 +24,7 @@
 #include "ghost.h"
 #include "../net.h"
 #include "ship_remote.h"
+#include "../bridge.h"
 
 #define ATTRACT_DURATION 60.0
 
@@ -82,12 +83,17 @@ void race_init(void) {
 
 void race_update(void) {
 	if (is_paused) {
+#ifndef __EMSCRIPTEN__
+		// Native draws the C pause menu and self-unpauses. On WASM the React
+		// overlay owns pause (drive via ag_pause/ag_unpause); the sim stays frozen
+		// either way because the else-block below is skipped.
 		if (!active_menu) {
 			active_menu = pause_menu_init();
 		}
 		if (input_pressed(A_MENU_QUIT)) {
 			race_unpause();
 		}
+#endif
 	}
 	else {
 		// Fixed-timestep simulation: advance the race sim in uniform 1/60s steps
@@ -138,9 +144,12 @@ void race_update(void) {
 				game_set_scene(GAME_SCENE_TITLE);
 			}
 		}
+#ifndef __EMSCRIPTEN__
+		// On WASM, React owns pause input (ESC -> ag_pause); native self-pauses here.
 		else if (active_menu == NULL && (input_pressed(A_MENU_START) || input_pressed(A_MENU_QUIT))) {
 			race_pause();
 		}
+#endif
 	}
 
 
@@ -169,6 +178,9 @@ void race_update(void) {
 
 	if (flags_is(g.ships[g.pilot].flags, SHIP_RACING)) {
 		hud_draw(&g.ships[g.pilot]);
+		// React shell HUD: push one telemetry frame (no-op on native). Fires once
+		// per displayed frame, only while the local player is racing.
+		ag_hud_push(&g.ships[g.pilot], g.camera.update_func == camera_update_race_intro ? 0 : 1, is_paused);
 	}
 
 	if (active_menu) {
@@ -228,7 +240,11 @@ void race_restart(void) {
 		g.lives--;
 		if (g.lives == 0) {
 			race_release_control();
+#ifndef __EMSCRIPTEN__
 			active_menu = game_over_menu_init();
+#else
+			game_set_scene(GAME_SCENE_FRONTEND); // React owns game-over; back to the menu
+#endif
 			return;
 		}
 	}
@@ -283,7 +299,13 @@ void race_end(void) {
 		sort(g.championship_ranks, len(g.championship_ranks), sort_points_compare);
 	}
 
+#ifdef __EMSCRIPTEN__
+	// React draws the results screen from the pushed payload; no C menu created
+	// (active_menu stays NULL, so race_update keeps rendering the post-race camera).
+	ag_on_race_over();
+#else
 	active_menu = race_stats_menu_init();
+#endif
 }
 
 void race_next(void) {
@@ -294,26 +316,41 @@ void race_next(void) {
 		(save.has_bonus_circuts && next_circut >= NUM_WIPEOUT_CIRCUTS) ||
 		(!save.has_bonus_circuts && next_circut >= NUM_NON_BONUS_CIRCUTS)
 	) {
+		// Unlocks apply on both targets; the bitmap congratulations scroller is
+		// native-only — on WASM React shows the championship result + we return to
+		// the frontend (no in-engine bitmap UI).
 		if (g.race_class == RACE_CLASS_RAPIER) {
 			if (save.has_bonus_circuts) {
+#ifndef __EMSCRIPTEN__
 				active_menu = text_scroll_menu_init(def.congratulations.rapier_all_circuts, len(def.congratulations.rapier_all_circuts));
+#endif
 			}
 			else {
 				save.has_bonus_circuts = true;
+#ifndef __EMSCRIPTEN__
 				active_menu = text_scroll_menu_init(def.congratulations.rapier, len(def.congratulations.rapier));
+#endif
 			}
 		}
 		else {
 			save.has_rapier_class = true;
 			if (save.has_bonus_circuts) {
+#ifndef __EMSCRIPTEN__
 				active_menu = text_scroll_menu_init(def.congratulations.venom_all_circuts, len(def.congratulations.venom_all_circuts));
+#endif
 			}
 			else {
+#ifndef __EMSCRIPTEN__
 				active_menu = text_scroll_menu_init(def.congratulations.venom, len(def.congratulations.venom));
+#endif
 			}
 		}
 		save.is_dirty = true;
+#ifndef __EMSCRIPTEN__
 		menu_is_scroll_text = true;
+#else
+		game_set_scene(GAME_SCENE_FRONTEND);
+#endif
 	}
 
 	// Next track

@@ -157,6 +157,7 @@ static void hud_draw_speedo_bars(vec2i_t *pos, float f, rgba_t color_override) {
 	hud_draw_speedo_bar(pos, &speedo.bars[last_bar - 1], &speedo.bars[last_bar], last_bar_fraction, color_override);
 }
 
+#ifndef __EMSCRIPTEN__ // WASM: the React HUD overlay draws the speed readout instead
 // Clean hi-tech speed readout: a horizontal bar + numeric value in a glass panel,
 // replacing the old PSX speedo facia + angled bar stack.
 static void hud_draw_speedo(int speed, int thrust) {
@@ -174,6 +175,7 @@ static void hud_draw_speedo(int speed, int thrust) {
 	float tf = thrust / 65.0; if (tf < 0) tf = 0; if (tf > 1) tf = 1;
 	ui_draw_rect(vec2i(p.x, p.y - 3*s), vec2i((int)(bw * tf) * s, 2*s), rgba(120, 40, 40, 220)); // thrust pip
 }
+#endif
 
 static void hud_draw_target_icon(vec3_t position) {
 	vec2i_t screen_size = render_size();
@@ -197,6 +199,7 @@ static void hud_draw_target_icon(vec3_t position) {
 }
 
 void hud_draw(ship_t *ship) {
+#ifndef __EMSCRIPTEN__ // WASM: all 2D readouts are drawn by the React HUD overlay
 	// Hi-tech glass panels behind the HUD clusters (drawn first, under the text)
 	ui_draw_rect(ui_scaled(vec2i(8, 4)), ui_scaled(vec2i(72, 62)), UI_COLOR_PANEL);
 	if (g.race_type != RACE_TYPE_TIME_TRIAL) {
@@ -276,7 +279,10 @@ void hud_draw(ship_t *ship) {
 		}
 	}
 
-	// Weapon target reticle
+#endif
+
+	// Weapon target reticle (3D-projected to screen — kept on WASM too; the
+	// React overlay can't project a world position without the camera matrix).
 	if (ship->weapon_target) {
 		hud_draw_target_icon(ship->weapon_target->position);
 	}
