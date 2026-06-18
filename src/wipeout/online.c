@@ -6,6 +6,7 @@
 #include "game.h"
 #include "ui.h"
 #include "online.h"
+#include "../bridge.h"
 
 #ifndef NET_SERVER_URL
 #define NET_SERVER_URL "wss://ag-mp-server-production.up.railway.app"
@@ -51,16 +52,23 @@ void online_update(void) {
 		return;
 	}
 
+#ifndef __EMSCRIPTEN__
+	// On WASM the React lobby owns input (cancel via ag_online_cancel).
 	if (input_pressed(A_MENU_QUIT) || input_pressed(A_MENU_BACK)) {
 		net_disconnect();
 		game_set_scene(GAME_SCENE_MAIN_MENU);
 		return;
 	}
+#endif
 
-	// --- draw ---
+	// --- draw / status ---
 	render_set_view_2d();
 	render_push_2d(vec2i(0, 0), render_size(), rgba(4, 8, 16, 255), RENDER_NO_TEXTURE);
 
+#ifdef __EMSCRIPTEN__
+	// React draws the lobby; push the net status (net_state_t + peer count).
+	ag_on_online(net_state(), net_peers());
+#else
 	// NOTE: the bitmap font only has A-Z, 0-9 and space — no punctuation/lowercase
 	// (ui_draw_text would read an out-of-bounds glyph), so keep these uppercase.
 	const char *status =
@@ -77,4 +85,5 @@ void online_update(void) {
 	ui_draw_number(net_peers(), ui_scaled_pos(UI_POS_MIDDLE | UI_POS_CENTER, vec2i(x + 70, y)), UI_SIZE_8, UI_COLOR_DEFAULT);
 
 	ui_draw_text_centered("PRESS ESC TO CANCEL", ui_scaled_pos(UI_POS_BOTTOM | UI_POS_CENTER, vec2i(0, -36)), UI_SIZE_8, UI_COLOR_DEFAULT);
+#endif
 }

@@ -74,7 +74,7 @@ var ENVIRONMENT_IS_SHELL = !ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_NODE && !ENVIR
 
 // --pre-jses are emitted after the Module integration code, so that they can
 // refer to Module (if they choose; they can also define Module)
-// include: /var/folders/8b/gfddzdh9435gy0r8ys7shrbr0000gn/T/tmptdjqqfgp.js
+// include: /var/folders/8b/gfddzdh9435gy0r8ys7shrbr0000gn/T/tmppr70y_hh.js
 
   if (!Module['expectedDataFileDownloads']) Module['expectedDataFileDownloads'] = 0;
   Module['expectedDataFileDownloads']++;
@@ -221,21 +221,21 @@ Module['FS_createPath']("/wipeout", "track14", true, true);
 
   })();
 
-// end include: /var/folders/8b/gfddzdh9435gy0r8ys7shrbr0000gn/T/tmptdjqqfgp.js
-// include: /var/folders/8b/gfddzdh9435gy0r8ys7shrbr0000gn/T/tmp8vvydajc.js
+// end include: /var/folders/8b/gfddzdh9435gy0r8ys7shrbr0000gn/T/tmppr70y_hh.js
+// include: /var/folders/8b/gfddzdh9435gy0r8ys7shrbr0000gn/T/tmpzm3rlaha.js
 
     // All the pre-js content up to here must remain later on, we need to run
     // it.
     if ((typeof ENVIRONMENT_IS_WASM_WORKER != 'undefined' && ENVIRONMENT_IS_WASM_WORKER) || (typeof ENVIRONMENT_IS_PTHREAD != 'undefined' && ENVIRONMENT_IS_PTHREAD) || (typeof ENVIRONMENT_IS_AUDIO_WORKLET != 'undefined' && ENVIRONMENT_IS_AUDIO_WORKLET)) Module['preRun'] = [];
     var necessaryPreJSTasks = Module['preRun'].slice();
-  // end include: /var/folders/8b/gfddzdh9435gy0r8ys7shrbr0000gn/T/tmp8vvydajc.js
-// include: /var/folders/8b/gfddzdh9435gy0r8ys7shrbr0000gn/T/tmpe0ma0vsq.js
+  // end include: /var/folders/8b/gfddzdh9435gy0r8ys7shrbr0000gn/T/tmpzm3rlaha.js
+// include: /var/folders/8b/gfddzdh9435gy0r8ys7shrbr0000gn/T/tmp47nbe4ce.js
 
     if (!Module['preRun']) throw 'Module.preRun should exist because file support used it; did a pre-js delete it?';
     necessaryPreJSTasks.forEach((task) => {
       if (Module['preRun'].indexOf(task) < 0) throw 'All preRun tasks that exist before user pre-js code should remain after; did you replace Module or modify Module.preRun?';
     });
-  // end include: /var/folders/8b/gfddzdh9435gy0r8ys7shrbr0000gn/T/tmpe0ma0vsq.js
+  // end include: /var/folders/8b/gfddzdh9435gy0r8ys7shrbr0000gn/T/tmp47nbe4ce.js
 
 
 var arguments_ = [];
@@ -6854,9 +6854,10 @@ function checkIncomingModuleAPI() {
   ignoredModuleProp('onSbrkGrow');
 }
 var ASM_CONSTS = {
-  118936: ($0, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) => { if (window.AG && window.AG.onFrame) { window.AG.onFrame($0, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15); } },  
- 119069: ($0) => { if (window.AG && window.AG.onScene) { window.AG.onScene(UTF8ToString($0)); } },  
- 119150: ($0) => { if (window.AG && window.AG.onRaceOver) { window.AG.onRaceOver(UTF8ToString($0)); } }
+  118888: ($0, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) => { if (window.AG && window.AG.onFrame) { window.AG.onFrame($0, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15); } },  
+ 119021: ($0) => { if (window.AG && window.AG.onScene) { window.AG.onScene(UTF8ToString($0)); } },  
+ 119102: ($0, $1) => { if (window.AG && window.AG.onOnline) { window.AG.onOnline($0, $1); } },  
+ 119175: ($0) => { if (window.AG && window.AG.onRaceOver) { window.AG.onRaceOver(UTF8ToString($0)); } }
 };
 function saudio_js_init(sample_rate,num_channels,buffer_size) { Module._saudio_context = null; Module._saudio_node = null; if (typeof AudioContext !== 'undefined') { Module._saudio_context = new AudioContext({ sampleRate: sample_rate, latencyHint: 'interactive', }); } else { Module._saudio_context = null; console.log('sokol_audio.h: no WebAudio support'); } if (Module._saudio_context) { console.log('sokol_audio.h: sample rate ', Module._saudio_context.sampleRate); Module._saudio_node = Module._saudio_context.createScriptProcessor(buffer_size, 0, num_channels); Module._saudio_node.onaudioprocess = (event) => { const num_frames = event.outputBuffer.length; const ptr = __saudio_emsc_pull(num_frames); if (ptr) { const num_channels = event.outputBuffer.numberOfChannels; for (let chn = 0; chn < num_channels; chn++) { const chan = event.outputBuffer.getChannelData(chn); for (let i = 0; i < num_frames; i++) { chan[i] = HEAPF32[(ptr>>2) + ((num_channels*i)+chn)] } } } }; Module._saudio_node.connect(Module._saudio_context.destination); const resume_webaudio = () => { if (Module._saudio_context) { if (Module._saudio_context.state === 'suspended') { Module._saudio_context.resume(); } } }; document.addEventListener('click', resume_webaudio, {once:true}); document.addEventListener('touchend', resume_webaudio, {once:true}); document.addEventListener('keydown', resume_webaudio, {once:true}); return 1; } else { return 0; } }
 function saudio_js_shutdown() { /** @suppress {missingProperties} */ const ctx = Module._saudio_context; if (ctx !== null) { if (Module._saudio_node) { Module._saudio_node.disconnect(); } ctx.close(); Module._saudio_context = null; Module._saudio_node = null; } }
@@ -6895,6 +6896,8 @@ var _ag_quit_to_menu = Module['_ag_quit_to_menu'] = makeInvalidEarlyAccess('_ag_
 var _ag_results_continue = Module['_ag_results_continue'] = makeInvalidEarlyAccess('_ag_results_continue');
 var _ag_submit_name = Module['_ag_submit_name'] = makeInvalidEarlyAccess('_ag_submit_name');
 var _ag_set_option = Module['_ag_set_option'] = makeInvalidEarlyAccess('_ag_set_option');
+var _ag_online_enter = Module['_ag_online_enter'] = makeInvalidEarlyAccess('_ag_online_enter');
+var _ag_online_cancel = Module['_ag_online_cancel'] = makeInvalidEarlyAccess('_ag_online_cancel');
 var __saudio_emsc_pull = Module['__saudio_emsc_pull'] = makeInvalidEarlyAccess('__saudio_emsc_pull');
 var __sapp_emsc_notify_keyboard_hidden = Module['__sapp_emsc_notify_keyboard_hidden'] = makeInvalidEarlyAccess('__sapp_emsc_notify_keyboard_hidden');
 var __sapp_emsc_onpaste = Module['__sapp_emsc_onpaste'] = makeInvalidEarlyAccess('__sapp_emsc_onpaste');
@@ -6931,6 +6934,8 @@ function assignWasmExports(wasmExports) {
   assert(typeof wasmExports['ag_results_continue'] != 'undefined', 'missing Wasm export: ag_results_continue');
   assert(typeof wasmExports['ag_submit_name'] != 'undefined', 'missing Wasm export: ag_submit_name');
   assert(typeof wasmExports['ag_set_option'] != 'undefined', 'missing Wasm export: ag_set_option');
+  assert(typeof wasmExports['ag_online_enter'] != 'undefined', 'missing Wasm export: ag_online_enter');
+  assert(typeof wasmExports['ag_online_cancel'] != 'undefined', 'missing Wasm export: ag_online_cancel');
   assert(typeof wasmExports['_saudio_emsc_pull'] != 'undefined', 'missing Wasm export: _saudio_emsc_pull');
   assert(typeof wasmExports['_sapp_emsc_notify_keyboard_hidden'] != 'undefined', 'missing Wasm export: _sapp_emsc_notify_keyboard_hidden');
   assert(typeof wasmExports['_sapp_emsc_onpaste'] != 'undefined', 'missing Wasm export: _sapp_emsc_onpaste');
@@ -6963,6 +6968,8 @@ function assignWasmExports(wasmExports) {
   _ag_results_continue = Module['_ag_results_continue'] = createExportWrapper('ag_results_continue', 0);
   _ag_submit_name = Module['_ag_submit_name'] = createExportWrapper('ag_submit_name', 1);
   _ag_set_option = Module['_ag_set_option'] = createExportWrapper('ag_set_option', 2);
+  _ag_online_enter = Module['_ag_online_enter'] = createExportWrapper('ag_online_enter', 0);
+  _ag_online_cancel = Module['_ag_online_cancel'] = createExportWrapper('ag_online_cancel', 0);
   __saudio_emsc_pull = Module['__saudio_emsc_pull'] = createExportWrapper('_saudio_emsc_pull', 1);
   __sapp_emsc_notify_keyboard_hidden = Module['__sapp_emsc_notify_keyboard_hidden'] = createExportWrapper('_sapp_emsc_notify_keyboard_hidden', 0);
   __sapp_emsc_onpaste = Module['__sapp_emsc_onpaste'] = createExportWrapper('_sapp_emsc_onpaste', 1);

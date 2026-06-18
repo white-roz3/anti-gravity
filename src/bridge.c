@@ -2,6 +2,7 @@
 #include <string.h>
 
 #include "bridge.h"
+#include "net.h"
 #include "wipeout/game.h"
 #include "wipeout/race.h"
 #include "utils.h"
@@ -65,10 +66,19 @@ void ag_on_scene(int scene) {
 	const char *name =
 		scene == GAME_SCENE_RACE     ? "race" :
 		scene == GAME_SCENE_FRONTEND ? "frontend" :
+		scene == GAME_SCENE_ONLINE   ? "online" :
 		                               "other";
 	EM_ASM({
 		if (window.AG && window.AG.onScene) { window.AG.onScene(UTF8ToString($0)); }
 	}, name);
+}
+
+// C -> JS online lobby status (net_state_t + peer count), pushed each frame
+// while in the online scene.
+void ag_on_online(int state, int peers) {
+	EM_ASM({
+		if (window.AG && window.AG.onOnline) { window.AG.onOnline($0, $1); }
+	}, state, peers);
 }
 
 // JS -> C: configure the race and enter it. Mirrors the in-engine menu's launch
@@ -193,7 +203,17 @@ EMSCRIPTEN_KEEPALIVE void ag_set_option(int key, double value) {
 	save.is_dirty = true;
 }
 
+// JS -> C: enter the online lobby (connects to the WS server) / cancel back out.
+EMSCRIPTEN_KEEPALIVE void ag_online_enter(void) {
+	game_set_scene(GAME_SCENE_ONLINE);
+}
+EMSCRIPTEN_KEEPALIVE void ag_online_cancel(void) {
+	net_disconnect();
+	game_set_scene(GAME_SCENE_FRONTEND);
+}
+
 #else
 void ag_hud_push(ship_t *me, int phase, int paused) { (void)me; (void)phase; (void)paused; }
 void ag_on_scene(int scene) { (void)scene; }
+void ag_on_online(int state, int peers) { (void)state; (void)peers; }
 #endif

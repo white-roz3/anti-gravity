@@ -13,6 +13,9 @@ void ag_hud_push(ship_t *me, int phase, int paused);
 // No-op on native.
 void ag_on_scene(int scene);
 
+// C -> JS online-lobby status (window.AG.onOnline(state, peers)). No-op on native.
+void ag_on_online(int state, int peers);
+
 #ifdef __EMSCRIPTEN__
 // C -> JS: push end-of-race results (window.AG.onRaceOver). Called from race_end.
 void ag_on_race_over(void);
@@ -27,6 +30,8 @@ void ag_quit_to_menu(void);
 void ag_results_continue(void);
 void ag_submit_name(const char *name);
 void ag_set_option(int key, double value);
+void ag_online_enter(void);
+void ag_online_cancel(void);
 #endif
 
 #endif
