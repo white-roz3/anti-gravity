@@ -1,6 +1,8 @@
 FROM nginx:alpine
 
-# nginx config with correct MIME types and COOP/COEP headers for SharedArrayBuffer
+# nginx config: MIME types, asset caching, clean URLs.
+# NOTE: the WASM build is single-threaded (no SharedArrayBuffer), so COOP/COEP
+# headers are NOT needed — omitting them lets the landing page use web fonts.
 RUN cat > /etc/nginx/conf.d/default.conf <<'EOF'
 # Pick a Cache-Control value from the request path (query string is not part of $uri).
 # Versioned assets (?v=agN) are safe to cache forever; HTML must revalidate.
@@ -14,10 +16,6 @@ server {
     root /usr/share/nginx/html;
     index index.html;
 
-    # All headers live at the server level: an add_header inside a location block
-    # would drop these inherited COOP/COEP headers and break SharedArrayBuffer.
-    add_header Cross-Origin-Opener-Policy "same-origin" always;
-    add_header Cross-Origin-Embedder-Policy "require-corp" always;
     add_header Cache-Control $cache_control always;
 
     types {
@@ -27,14 +25,15 @@ server {
         application/octet-stream              data;
     }
 
+    # Clean URLs: /play -> play.html
     location / {
-        try_files $uri $uri/ =404;
+        try_files $uri $uri.html $uri/ =404;
     }
 }
 EOF
 
 COPY build-wasm/index.html /usr/share/nginx/html/
-COPY build-wasm/game.html /usr/share/nginx/html/
+COPY build-wasm/play.html /usr/share/nginx/html/
 COPY build-wasm/antigravity.js /usr/share/nginx/html/
 COPY build-wasm/antigravity.wasm /usr/share/nginx/html/
 
