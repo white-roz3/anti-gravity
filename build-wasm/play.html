@@ -108,7 +108,7 @@
 			<canvas id="canvas" oncontextmenu="event.preventDefault()" tabindex=-1></canvas>
 			<div class="info-overlay" id="loading">
 				<div id="spinner"></div>
-				<div id="status">Entering race…</div>
+				<div id="status">Loading</div>
 				<progress value="0" max="100" id="progress" hidden=1></progress>
 			</div>
 			<div class="info-overlay" id="select-version">
@@ -206,7 +206,7 @@
 					Module.setStatus.last.time = now;
 					Module.setStatus.last.text = text;
 					if (m) {
-						text = m[1];
+						text = 'Loading';
 						progressElement.value = parseInt(m[2])*100;
 						progressElement.max = parseInt(m[4])*100;
 						progressElement.hidden = false;
@@ -222,10 +222,10 @@
 				totalDependencies: 0,
 				monitorRunDependencies: (left) => {
 					Module.totalDependencies = Math.max(Module.totalDependencies, left);
-					Module.setStatus(left ? 'preparing... (' + (Module.totalDependencies-left) + '/' + Module.totalDependencies + ')' : 'all downloads complete.');
+					Module.setStatus(left ? 'Loading (' + (Module.totalDependencies-left) + '/' + Module.totalDependencies + ')' : 'Loading');
 				}
 			};
-			Module.setStatus('Entering race…');
+			Module.setStatus('Loading');
 			window.onerror = () => {
 				Module.setStatus('Exception thrown, see JavaScript console');
 				document.getElementById('loading').style.display = 'block';
